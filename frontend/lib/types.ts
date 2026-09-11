@@ -105,6 +105,7 @@ export interface Attachment {
 
 export interface Report {
   id: string;
+  reference: string;
   program_id: string;
   program_name: string;
   researcher_id: string | null;

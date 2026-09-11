@@ -151,6 +151,12 @@ export default function ReportDetailPage() {
           <h1 className="text-2xl font-semibold tracking-tight">{report.title}</h1>
           <SeverityBadge severity={report.severity} />
           <ReportStatusBadge status={report.status} />
+          <span
+            className="rounded-md bg-slate-100 px-2 py-1 font-mono text-xs font-semibold text-slate-700"
+            title="Reference code quoted by the submitter (e.g. from the public form)"
+          >
+            REF {report.reference}
+          </span>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">

@@ -68,6 +68,7 @@ async def serialize_report(report: Report, presign: bool = False) -> ReportRead:
         researcher_name = "Anonymous (public form)"
     return ReportRead(
         id=report.id,
+        reference=report.id.hex[:8].upper(),
         program_id=report.program_id,
         program_name=report.program.name,
         researcher_id=report.researcher_id,

@@ -173,6 +173,7 @@ function ReportsTab({ programId }: { programId: string }) {
   const [error, setError] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     apiGet<ProgramStats>(`/programs/${programId}/stats`)
@@ -185,12 +186,17 @@ function ReportsTab({ programId }: { programId: string }) {
 
   const filtered = useMemo(
     () =>
-      (reports ?? []).filter(
-        (r) =>
-          (statusFilter === "all" || r.status === statusFilter) &&
-          (severityFilter === "all" || r.severity === severityFilter)
-      ),
-    [reports, statusFilter, severityFilter]
+      (reports ?? []).filter((r) => {
+        if (statusFilter !== "all" && r.status !== statusFilter) return false;
+        if (severityFilter !== "all" && r.severity !== severityFilter) return false;
+        if (search.trim()) {
+          const q = search.trim().toLowerCase();
+          const haystack = `${r.reference} ${r.title} ${r.researcher_name}`.toLowerCase();
+          if (!haystack.includes(q)) return false;
+        }
+        return true;
+      }),
+    [reports, statusFilter, severityFilter, search]
   );
 
   return (
@@ -242,6 +248,13 @@ function ReportsTab({ programId }: { programId: string }) {
           );
         })}
         <div className="ml-auto flex items-center gap-2">
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search ref, title, researcher…"
+            aria-label="Search reports"
+            className="h-8 w-56 text-xs"
+          />
           <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
             Severity
           </span>
@@ -284,6 +297,7 @@ function ReportsTab({ programId }: { programId: string }) {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Ref</TableHead>
                 <TableHead>Title</TableHead>
                 <TableHead>Severity</TableHead>
                 <TableHead>Status</TableHead>
@@ -295,6 +309,9 @@ function ReportsTab({ programId }: { programId: string }) {
             <TableBody>
               {filtered.map((report) => (
                 <TableRow key={report.id}>
+                  <TableCell className="font-mono text-xs font-medium text-slate-500">
+                    {report.reference}
+                  </TableCell>
                   <TableCell>
                     <Link
                       href={`/reports/${report.id}`}

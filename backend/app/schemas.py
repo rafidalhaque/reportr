@@ -207,6 +207,7 @@ class AttachmentOut(BaseModel):
 
 class ReportRead(BaseModel):
     id: UUID
+    reference: str  # short code (first 8 hex of id) quoted by public-form submitters
     program_id: UUID
     program_name: str
     researcher_id: UUID | None
