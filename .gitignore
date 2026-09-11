@@ -1,0 +1,23 @@
+# --- Python / backend ---
+backend/.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+backend/*.db
+backend/.env
+
+# --- Node / frontend ---
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/next-env.d.ts
+*.tsbuildinfo
+
+# --- env (keep .env.example tracked) ---
+.env
+.env.local
+.env.*.local
+
+# --- misc ---
+.DS_Store
+Thumbs.db
