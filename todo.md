@@ -22,6 +22,11 @@ duplicate (14/15) — nothing was dropped.
   builder (AV/AC/PR/UI/S/C/I/A picker → vector string + base score), shown in the public form
   and researcher submission form; optionally auto-suggest severity from the score (resolves
   the open CVSS question in spec §6).
+- [ ] **16. "Type of bug" dropdown (CWE) in the submission form** — bug-type selector backed
+  by the MITRE CWE list (https://cwe.mitre.org/data/index.html). Store a `cwe_id`/`cwe_name`
+  on the report (small migration + API fields), render in the public form and researcher
+  submission form, and show it in staff views next to severity. Bundle the CWE list as a
+  static JSON snapshot (ship in repo, refreshable) rather than hitting MITRE at runtime.
 
 ## Email & notifications
 
@@ -74,6 +79,7 @@ duplicate (14/15) — nothing was dropped.
 
 1. #1 + #15 (finish the public reporter story), then #5 hardening
 2. #2 → #8 → #3 (email stack in dependency order)
-3. #4 → #6 (scope structure before the CVSS/severity pairing)
+3. #4 → #6 / #16 (scope structure before the CVSS/severity pairing; CWE dropdown is an
+   independent form addition that can land anytime)
 4. #11 + #12 + #13 (one UI pass: theme + sidebar + profile entry points)
 5. #10, #14b anywhere; #9 is the big standalone milestone
