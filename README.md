@@ -1,4 +1,4 @@
-# Bug Bounty Platform (working title)
+# Reportr
 
 Self-hosted, invite-only bug bounty platform — multiple concurrent programs under one organization.
 Open source (AGPLv3, final call pending) and positioned as a self-hosted alternative to

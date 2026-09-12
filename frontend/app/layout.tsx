@@ -3,8 +3,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Bug Bounty Platform",
-    template: "%s · Bug Bounty Platform",
+    default: "Reportr",
+    template: "%s · Reportr",
   },
   description:
     "Self-hosted bug bounty platform for coordinated vulnerability disclosure.",

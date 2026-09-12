@@ -33,7 +33,7 @@ export function Brand({ href = "/" }: { href?: string }) {
   return (
     <Link href={href} className="flex items-center gap-2 font-semibold text-slate-900 dark:text-slate-100">
       <Shield className="h-5 w-5 text-indigo-600" />
-      Bug Bounty Platform
+      Reportr
     </Link>
   );
 }

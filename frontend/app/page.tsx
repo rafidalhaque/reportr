@@ -116,7 +116,7 @@ export default function LandingPage() {
       </main>
 
       <footer className="border-t border-slate-200 py-6 text-center text-xs text-slate-400">
-        Bug Bounty Platform — self-hosted, coordinated disclosure.
+        Reportr — self-hosted, coordinated disclosure.
       </footer>
     </div>
   );

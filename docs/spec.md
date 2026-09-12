@@ -166,7 +166,7 @@ No cross-researcher visibility (can't see other researchers' reports/comments on
 
 - **CVSS handling**: auto-calculate severity from CVSS vector input, or staff sets severity manually with CVSS stored as a reference field only? Affects report-submission form complexity. **Unresolved.**
 - **License**: AGPLv3 leaning (prevents unmodified SaaS-wrapping without contributing back) — final call pending.
-- **Name/positioning**: undecided. Recommend framing around "self-hosted HackerOne/Bugcrowd alternative" for discoverability (GitHub search, HN launch).
+- **Name/positioning**: working name is **Reportr** (repo: github.com/rafidalhaque/reportr); final name TBD. Positioning recommendation unchanged: frame around "self-hosted HackerOne/Bugcrowd alternative" for discoverability (GitHub search, HN launch).
 
 ---
 
