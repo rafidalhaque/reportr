@@ -4,7 +4,7 @@ Self-hosted, invite-only bug bounty platform — multiple concurrent programs un
 Open source (AGPLv3, final call pending) and positioned as a self-hosted alternative to
 HackerOne/Bugcrowd/Intigriti, without SaaS lock-in.
 
-**Status**: MVP under active development. See [docs/spec.md](docs/spec.md) for the full spec.
+**Status**: MVP under active development. See [docs/spec.md](docs/spec.md) for the full spec, [docs/features.md](docs/features.md) for the shipped-feature inventory, and [todo.md](todo.md) for what's next.
 
 ## Quickstart (Docker)
 
