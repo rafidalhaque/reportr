@@ -17,12 +17,13 @@ class Settings(BaseSettings):
     cookie_domain: str | None = None
     cors_origins: str = "http://localhost:3000"
 
-    # S3-compatible storage (MinIO in compose; AWS S3/R2/Spaces via config)
-    s3_endpoint: str = ""  # empty -> storage disabled
-    s3_public_endpoint: str = ""  # client-facing endpoint used for presigned GETs
-    s3_access_key: str = ""
+    # Attachment storage: AWS S3 via access/secret keys by default; any
+    # S3-compatible service (MinIO, R2, Spaces) by setting s3_endpoint.
+    s3_endpoint: str = ""  # empty -> real AWS S3
+    s3_region: str = "us-east-1"
+    s3_access_key: str = ""  # empty -> storage disabled
     s3_secret_key: str = ""
-    s3_bucket: str = "attachments"
+    s3_bucket: str = ""
 
     # Notifications
     telegram_bot_token: str = ""

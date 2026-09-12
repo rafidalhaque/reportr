@@ -1,31 +1,35 @@
-"""S3-compatible attachment storage (spec §2).
+"""Attachment storage over the S3 API (todo: AWS S3 by default, MinIO/R2/Spaces via config).
 
-Talks S3 API only — MinIO in compose by default, AWS S3/R2/Spaces via config.
-Disabled (returns None / raises 503 at the API layer) when S3_ENDPOINT is unset.
+Credentials come from S3_ACCESS_KEY / S3_SECRET_KEY. With S3_ENDPOINT empty the botocore
+defaults are used (real AWS S3, virtual-host addressing); a custom endpoint switches to
+path-style addressing for S3-compatible services. Storage is disabled (the API layer
+returns 503) when no keys are configured.
 """
 
 import re
 import uuid
-from concurrent.futures import ThreadPoolExecutor
 
 import boto3
 from botocore.config import Config as BotoConfig
 
 from app.config import get_settings
 
-_thread_pool = ThreadPoolExecutor(max_workers=4)
-
 
 class Storage:
-    def __init__(self, endpoint: str, public_endpoint: str, access_key: str, secret_key: str, bucket: str):
-        common = dict(
+    def __init__(
+        self, endpoint: str, region: str, access_key: str, secret_key: str, bucket: str
+    ):
+        options = dict(
             aws_access_key_id=access_key,
             aws_secret_access_key=secret_key,
-            config=BotoConfig(signature_version="s3v4", addressing_style="path"),
-            region_name="us-east-1",
+            region_name=region,
+            config=BotoConfig(signature_version="s3v4"),
         )
-        self._client = boto3.client("s3", endpoint_url=endpoint, **common)
-        self._public_client = boto3.client("s3", endpoint_url=public_endpoint or endpoint, **common)
+        if endpoint:
+            # S3-compatible services (MinIO, R2, Spaces) need path-style addressing
+            options["endpoint_url"] = endpoint
+            options["config"] = BotoConfig(signature_version="s3v4", s3={"addressing_style": "path"})
+        self._client = boto3.client("s3", **options)
         self.bucket = bucket
 
     @staticmethod
@@ -45,7 +49,7 @@ class Storage:
         await anyio.to_thread.run_sync(self._put, key, data, content_type)
 
     def _presign(self, key: str) -> str:
-        return self._public_client.generate_presigned_url(
+        return self._client.generate_presigned_url(
             "get_object", Params={"Bucket": self.bucket, "Key": key}, ExpiresIn=3600
         )
 
@@ -68,6 +72,6 @@ class Storage:
 
 def get_storage() -> Storage | None:
     s = get_settings()
-    if not s.s3_endpoint or not s.s3_access_key:
+    if not (s.s3_access_key and s.s3_secret_key and s.s3_bucket):
         return None
-    return Storage(s.s3_endpoint, s.s3_public_endpoint, s.s3_access_key, s.s3_secret_key, s.s3_bucket)
+    return Storage(s.s3_endpoint, s.s3_region, s.s3_access_key, s.s3_secret_key, s.s3_bucket)

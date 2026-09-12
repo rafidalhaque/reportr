@@ -26,7 +26,7 @@ Self-hosted, invite-only bug bounty platform supporting multiple concurrent prog
 - **DB**: Postgres
 - **Background jobs**: APScheduler (in-process) — invite expiry, digest notifications. No Celery/Redis unless volume demands it.
 - **Notifications**: Telegram bot (reuse frontdesk pattern), abstracted behind a notification interface so Slack/Discord/email backends can be swapped in by adopters.
-- **Storage**: S3-compatible object storage for report attachments — MinIO bundled in docker-compose as default (self-hosted, no external dependency), swappable to AWS S3/R2/Spaces via config for hosted deploys. App talks to storage via S3 API only, never local disk — keeps self-host and future SaaS paths identical.
+- **Storage**: AWS S3 for report attachments, configured via access/secret keys (+ region), no bundled object store in docker-compose. Any S3-compatible service (MinIO, R2, Spaces) works by setting `S3_ENDPOINT`. App talks to storage via S3 API only, never local disk — keeps self-host and future SaaS paths identical. With no keys configured, attachments are disabled and the rest of the platform runs normally.
 - **Deploy**: docker-compose (`fastapi`, `postgres`, `nextjs`, `nginx`, `minio`), Let's Encrypt/certbot. Target: `docker-compose up` → working instance in under 5 minutes (seed/demo data included) — this is the onboarding story for OSS adopters.
 
 **Core architectural decision**: two intake paths (direct invite by staff, public application form) converge into the same triage → invite → membership pipeline. No duplicate logic between paths.

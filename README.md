@@ -19,8 +19,11 @@ docker compose up --build
 |---|---|
 | Web app | http://localhost:8080 |
 | API docs (OpenAPI) | http://localhost:8080/api/docs |
-| MinIO console (attachments) | not exposed by default (API on `:9000`) |
 | Postgres | internal, volume-backed |
+
+Attachments live in **AWS S3** (via `S3_ACCESS_KEY` / `S3_SECRET_KEY`) — set the `S3_*`
+vars in `.env` before `docker compose up`; with the keys unset, attachment
+uploads/downloads are disabled and everything else works.
 
 The first boot migrates the database and seeds:
 
@@ -37,8 +40,10 @@ triage it from the staff side.
   (staff and researchers are separate accounts/tables, per spec), JWT in HttpOnly cookies
 - **Frontend** — Next.js (App Router) + TypeScript + Tailwind
 - **DB** — Postgres 16
-- **Storage** — S3-compatible object storage for report attachments; MinIO bundled in compose,
-  swappable to S3/R2/Spaces via config. The app talks S3 API only, never local disk.
+- **Storage** — AWS S3 for report attachments, configured with `S3_ACCESS_KEY` /
+  `S3_SECRET_KEY` (+ bucket and region). Any S3-compatible service (MinIO, Cloudflare R2,
+  DigitalOcean Spaces) works by pointing `S3_ENDPOINT` at it. The app talks S3 API only,
+  never local disk.
 - **Background jobs** — APScheduler (in-process): invite expiry
 - **Notifications** — Telegram bot behind a small `Notifier` interface (Slack/Discord/email are
   drop-in replacements); a Null notifier logs when Telegram is unconfigured
@@ -96,7 +101,8 @@ Everything is env-driven — see [.env.example](.env.example). Highlights:
 
 - `SECRET` — auth signing key (change in prod)
 - `CORS_ORIGINS` — browser origins allowed to send credentials
-- `S3_*` — leave `S3_ENDPOINT` empty to disable attachments entirely
+- `S3_ACCESS_KEY` / `S3_SECRET_KEY` / `S3_BUCKET` / `S3_REGION` — AWS credentials for attachment storage (unset them to disable attachments)
+- `S3_ENDPOINT` — optional; point at MinIO/R2/Spaces instead of real AWS S3
 - `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` — optional notifications for new applications,
   new reports, status changes, and comments
 
