@@ -214,6 +214,12 @@ class AttachmentIn(BaseModel):
     name: str
 
 
+class AttachmentOut(BaseModel):
+    key: str
+    name: str
+    url: str | None = None
+
+
 class ReportCreate(BaseModel):
     program_id: UUID
     title: str = Field(min_length=1, max_length=200)
@@ -255,12 +261,6 @@ class CommentRead(BaseModel):
     author_name: str
     attachments: list[AttachmentOut]
     created_at: datetime
-
-
-class AttachmentOut(BaseModel):
-    key: str
-    name: str
-    url: str | None = None
 
 
 class ReportRead(BaseModel):
