@@ -65,7 +65,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-type TabKey = "reports" | "scope" | "invites" | "members" | "applications" | "roles" | "settings";
+type TabKey =
+  | "reports"
+  | "scope"
+  | "invites"
+  | "members"
+  | "applications"
+  | "roles"
+  | "settings"
+  | "api";
 
 export default function ProgramPage() {
   const { me, loading } = useMe("staff");
@@ -95,6 +103,7 @@ export default function ProgramPage() {
     { key: "applications", label: "Applications" },
     ...(isOrgAdmin ? [{ key: "roles" as TabKey, label: "Roles" }] : []),
     { key: "settings", label: "Settings" },
+    { key: "api", label: "Public API" },
   ];
 
   return (
@@ -150,6 +159,7 @@ export default function ProgramPage() {
             {tab === "settings" && (
               <SettingsTab program={program} onSaved={setProgram} me={me} />
             )}
+            {tab === "api" && <ApiDocsTab program={program} />}
           </>
         )}
       </main>
@@ -838,6 +848,211 @@ function ProgramEmailCard({ programId }: { programId: string }) {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+/* ---------------------------- Public API tab ------------------------------ */
+
+function CopyCodeBlock({
+  code,
+  copyId,
+  copiedId,
+  onCopy,
+}: {
+  code: string;
+  copyId: string;
+  copiedId: string | null;
+  onCopy: (text: string, id: string) => void;
+}) {
+  return (
+    <div className="relative">
+      <pre className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50 p-3 pr-16 font-mono text-xs leading-relaxed text-slate-800 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
+        {code}
+      </pre>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="absolute right-2 top-2"
+        onClick={() => onCopy(code, copyId)}
+      >
+        {copiedId === copyId ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+        {copiedId === copyId ? "Copied" : "Copy"}
+      </Button>
+    </div>
+  );
+}
+
+/** Documents this program's shareable public API (todo #5) with live values. */
+function ApiDocsTab({ program }: { program: ProgramDetail }) {
+  const [origin, setOrigin] = useState("");
+  const [copied, setCopied] = useState<string | null>(null);
+
+  useEffect(() => setOrigin(window.location.origin), []);
+
+  function copy(text: string, id: string) {
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        setCopied(id);
+        setTimeout(() => setCopied(null), 1500);
+      })
+      .catch(() => {
+        // clipboard unavailable (insecure context) — user can select the text instead
+      });
+  }
+
+  const formEnabled = program.public_reporting && program.status === "active";
+  const formUrl = `${origin}/report/${program.slug}`;
+  const submitUrl = `${origin}/api/public/programs/${program.slug}/reports`;
+  const infoUrl = `${origin}/api/public/programs/${program.slug}/report-form`;
+
+  const submitExample = `curl -X POST ${submitUrl} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Reflected XSS in search results",
+    "severity": "high",
+    "cwe_id": "CWE-79",
+    "description": "The q parameter is reflected without encoding.",
+    "repro_steps": "1. Open /search\n2. Submit <script> payload\n3. Observe execution",
+    "affected_asset": "${program.slug}.example.com/search",
+    "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N",
+    "email": "researcher@example.com"
+  }'`;
+
+  const responseExample = `{
+  "id": "487c893f-b5c1-44cc-b5c0-01cdb1718e59",
+  "reference": "487C893F",
+  "email": "researcher@example.com"
+}`;
+
+  const infoExample = `curl ${infoUrl}`;
+
+  const reasonLiteral =
+    program.status !== "active"
+      ? "This program is not accepting reports right now"
+      : "Public reporting is disabled for this program";
+  const infoResponseExample = `{
+  "available": ${formEnabled ? "true" : "false"},
+  "reason": ${formEnabled ? "null" : `"${reasonLiteral}"`},
+  "program_name": "${program.name}",
+  "program_slug": "${program.slug}",
+  "description": "${program.description.replace(/"/g, '\\"').slice(0, 80)}",
+  "scope_markdown": "…${program.visibility === "public" ? "(included — program is public)" : "(hidden — program is private)"}…",
+  "scope_entries": [ … ]
+}`;
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Public submission API</CardTitle>
+          <CardDescription>
+            Unauthenticated endpoints that let anyone — or any tool — submit reports to this
+            program and list its public information. No API key required; per-IP rate limits
+            apply. The full contract lives in <code>docs/public-api.md</code> in the repository.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            {formEnabled ? (
+              <Badge color="green">Submission API available</Badge>
+            ) : (
+              <Badge color="slate">Submissions unavailable</Badge>
+            )}
+            <Badge color="indigo">visibility: {program.visibility}</Badge>
+            <Badge color={program.status === "active" ? "green" : "amber"}>
+              status: {program.status}
+            </Badge>
+            {!formEnabled && (
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                Enable public reporting in the Settings tab (and keep the program active) to
+                accept submissions.
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-800/60">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                Public report form
+              </p>
+              <code className="block truncate text-xs text-slate-700 dark:text-slate-300">{formUrl}</code>
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={() => copy(formUrl, "form")}>
+              {copied === "form" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              {copied === "form" ? "Copied" : "Copy link"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Submit a report</CardTitle>
+          <CardDescription>
+            <code>POST /api/public/programs/{program.slug}/reports</code> — anonymous (omit{" "}
+            <code>email</code>) or email-only contact. Returns a reference code quoted in staff
+            views. Rate limit: 10 requests/hour per IP (this program), <code>429</code> +{" "}
+            <code>Retry-After</code> beyond that.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <CopyCodeBlock code={submitExample} copyId="submit" copiedId={copied} onCopy={copy} />
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Response 201</p>
+          <CopyCodeBlock code={responseExample} copyId="resp" copiedId={copied} onCopy={copy} />
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Errors: <code>404</code> unknown slug · <code>403</code> public reporting disabled ·{" "}
+            <code>400</code> program not active · <code>422</code> validation (unknown{" "}
+            <code>cwe_id</code>, bad fields) · <code>429</code> rate limited.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Check form availability</CardTitle>
+          <CardDescription>
+            <code>GET /api/public/programs/{program.slug}/report-form</code> — what the report
+            form displays. Scope details are included only while the program visibility is
+            public.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <CopyCodeBlock code={infoExample} copyId="info" copiedId={copied} onCopy={copy} />
+          <CopyCodeBlock code={infoResponseExample} copyId="inforesp" copiedId={copied} onCopy={copy} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Other public endpoints</CardTitle>
+          <CardDescription>Platform-wide, not specific to this program.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+            <li>
+              <code className="font-mono text-xs">GET /api/public/programs</code> — public
+              program listing
+            </li>
+            <li>
+              <code className="font-mono text-xs">GET /api/public/platform</code> — platform
+              flags (e.g. researcher applications on/off)
+            </li>
+            <li>
+              <code className="font-mono text-xs">POST /api/public/applications</code> — apply
+              to join (rate limit 3/hour per IP; rejected while applications are closed)
+            </li>
+            <li>
+              <code className="font-mono text-xs">
+                GET /api/public/invites/{"{token}"}
+              </code>{" "}
+              — invite pre-check
+            </li>
+          </ul>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
