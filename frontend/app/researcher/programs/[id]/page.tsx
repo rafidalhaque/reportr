@@ -156,7 +156,7 @@ export default function ResearcherProgramPage() {
                 <>
                   {scopeEntries.length > 0 && (
                     <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
-                      General scope notes
+                      Overview
                     </p>
                   )}
                   <Markdown content={program.scope_markdown} />

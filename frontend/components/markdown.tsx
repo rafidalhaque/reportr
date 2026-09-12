@@ -1,13 +1,16 @@
 "use client";
 
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 
-/** Renders markdown with hand-rolled prose styles (no typography plugin). */
+/** Renders markdown with hand-rolled prose styles (no typography plugin).
+ * remark-gfm enables pipe tables, strikethrough, autolinks and task lists. */
 export function Markdown({ content, className }: { content: string; className?: string }) {
   return (
     <div className={cn("space-y-3 text-sm leading-relaxed text-slate-700 dark:text-slate-300", className)}>
       <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
         components={{
           h1: ({ node, ...props }) => (
             <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100" {...props} />

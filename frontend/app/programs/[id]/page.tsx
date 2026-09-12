@@ -1847,7 +1847,7 @@ function SettingsTab({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="settings-scope">Scope (markdown)</Label>
+              <Label htmlFor="settings-scope">Overview (markdown)</Label>
               <Textarea
                 id="settings-scope"
                 rows={12}
@@ -1855,6 +1855,10 @@ function SettingsTab({
                 value={scopeMarkdown}
                 onChange={(e) => setScopeMarkdown(e.target.value)}
               />
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                General program overview, rules, and free-form notes — shown to researchers
+                alongside the structured scope entries on the Scope tab.
+              </p>
             </div>
 
             <Button type="submit" disabled={saving}>
@@ -1884,12 +1888,12 @@ function SettingsTab({
             </div>
             <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
               <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
-                Scope
+                Overview
               </p>
               {scopeMarkdown.trim() ? (
                 <Markdown content={scopeMarkdown} />
               ) : (
-                <p className="text-sm italic text-slate-400">No scope defined yet.</p>
+                <p className="text-sm italic text-slate-400">No overview defined yet.</p>
               )}
             </div>
           </CardContent>
