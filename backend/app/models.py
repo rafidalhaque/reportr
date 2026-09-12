@@ -174,6 +174,7 @@ class ReportComment(Base):
     author_researcher_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("researchers.id"), nullable=True)
     body: Mapped[str] = mapped_column(Text)
     internal_only: Mapped[bool] = mapped_column(Boolean, default=False)
+    attachments: Mapped[list] = mapped_column(JSON, default=list)  # JSON list of {key, name}
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     report: Mapped[Report] = relationship(back_populates="comments")

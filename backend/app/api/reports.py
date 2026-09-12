@@ -284,6 +284,8 @@ async def list_comments(report_id: UUID, actor=Depends(get_actor), session: Asyn
     if is_researcher:
         query = query.where(ReportComment.internal_only.is_(False))  # internal notes stay staff-side
     comments = (await session.scalars(query)).all()
+
+    storage = get_storage()
     out = []
     for c in comments:
         if c.author_staff_id is not None:
@@ -295,6 +297,7 @@ async def list_comments(report_id: UUID, actor=Depends(get_actor), session: Asyn
                     internal_only=c.internal_only,
                     author_kind="staff",
                     author_name=(author.name or author.email) if author else "staff",
+                    attachments=await _presign_attachments(storage, c.attachments),
                     created_at=c.created_at,
                 )
             )
@@ -307,9 +310,23 @@ async def list_comments(report_id: UUID, actor=Depends(get_actor), session: Asyn
                     internal_only=c.internal_only,
                     author_kind="researcher",
                     author_name=(author.name or author.email) if author else "researcher",
+                    attachments=await _presign_attachments(storage, c.attachments),
                     created_at=c.created_at,
                 )
             )
+    return out
+
+
+async def _presign_attachments(storage, attachments: list[dict] | None) -> list[AttachmentOut]:
+    out = []
+    for att in attachments or []:
+        entry = AttachmentOut(key=att.get("key", ""), name=att.get("name", ""))
+        if storage is not None and entry.key:
+            try:
+                entry.url = await storage.presigned_get(entry.key)
+            except Exception:
+                entry.url = None
+        out.append(entry)
     return out
 
 
@@ -329,6 +346,7 @@ async def create_comment(
             author_staff_id=actor.staff.id,
             body=payload.body,
             internal_only=payload.internal_only,
+            attachments=[a.model_dump() for a in payload.attachments],
         )
         author_kind, author_name = "staff", actor.staff.name or actor.staff.email
     else:
@@ -339,6 +357,7 @@ async def create_comment(
             author_researcher_id=actor.researcher.id,
             body=payload.body,
             internal_only=False,  # researchers can never write internal notes
+            attachments=[a.model_dump() for a in payload.attachments],
         )
         author_kind, author_name = "researcher", actor.researcher.name or actor.researcher.email
     session.add(comment)
@@ -350,11 +369,13 @@ async def create_comment(
         + (" [internal]" if comment.internal_only else "")
         + f": {payload.body[:120]}",
     )
+    storage = get_storage()
     return CommentRead(
         id=comment.id,
         body=comment.body,
         internal_only=comment.internal_only,
         author_kind=author_kind,
         author_name=author_name,
+        attachments=await _presign_attachments(storage, comment.attachments),
         created_at=comment.created_at,
     )

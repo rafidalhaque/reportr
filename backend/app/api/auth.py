@@ -15,8 +15,15 @@ from app.core.auth import (
 )
 from app.core.deps import get_actor
 from app.database import get_session
-from app.models import Invite, ProgramMembership, Researcher
-from app.schemas import MeRead, RegisterWithInvite, ResearcherRead
+from app.models import Invite, Program, ProgramMembership, ProgramRole, Researcher
+from app.schemas import (
+    MeRead,
+    ProfileMembership,
+    ProfileRead,
+    ProfileUpdate,
+    RegisterWithInvite,
+    ResearcherRead,
+)
 
 router = APIRouter(tags=["auth"])
 me_router = APIRouter(tags=["me"])
@@ -56,6 +63,74 @@ async def me(actor=Depends(get_actor)):
         return MeRead(kind="staff", id=u.id, email=u.email, name=u.name, global_role=u.global_role)
     u = actor.researcher
     return MeRead(kind="researcher", id=u.id, email=u.email, name=u.name, researcher_status=u.status)
+
+
+async def _build_profile(actor, session: AsyncSession) -> ProfileRead:
+    if actor.kind == "staff":
+        u = actor.staff
+        rows = (
+            await session.execute(
+                select(ProgramRole, Program)
+                .join(Program, ProgramRole.program_id == Program.id)
+                .where(ProgramRole.staff_id == u.id)
+                .order_by(ProgramRole.created_at)
+            )
+        ).all()
+        memberships = [
+            ProfileMembership(
+                program_id=program.id, program_name=program.name, program_slug=program.slug,
+                role=role.role, joined_at=role.created_at,
+            )
+            for role, program in rows
+        ]
+        return ProfileRead(
+            kind="staff", id=u.id, email=u.email, name=u.name,
+            global_role=u.global_role, memberships=memberships,
+        )
+    u = actor.researcher
+    rows = (
+        await session.execute(
+            select(ProgramMembership, Program)
+            .join(Program, ProgramMembership.program_id == Program.id)
+            .where(ProgramMembership.researcher_id == u.id)
+            .order_by(ProgramMembership.created_at)
+        )
+    ).all()
+    memberships = [
+        ProfileMembership(
+            program_id=program.id, program_name=program.name, program_slug=program.slug,
+            role="member", joined_at=membership.created_at,
+        )
+        for membership, program in rows
+    ]
+    return ProfileRead(
+        kind="researcher", id=u.id, email=u.email, name=u.name,
+        researcher_status=u.status, portfolio_url=u.portfolio_url, memberships=memberships,
+    )
+
+
+@me_router.get("/me/profile", response_model=ProfileRead)
+async def my_profile(actor=Depends(get_actor), session: AsyncSession = Depends(get_session)):
+    return await _build_profile(actor, session)
+
+
+@me_router.patch("/me", response_model=ProfileRead)
+async def update_me(
+    payload: ProfileUpdate, actor=Depends(get_actor), session: AsyncSession = Depends(get_session)
+):
+    """Edit own profile: name for everyone, portfolio URL for researchers (todo #13).
+
+    Email and password changes are deliberately NOT here (todo #14b — needs SMTP).
+    """
+    data = payload.model_dump(exclude_unset=True)
+    user = actor.staff if actor.kind == "staff" else actor.researcher
+    if data.get("name") is not None:
+        user.name = data["name"].strip()
+    if actor.kind == "researcher" and "portfolio_url" in data:
+        user.portfolio_url = data["portfolio_url"] or None
+    await session.commit()
+    await session.refresh(user)
+    return await _build_profile(actor, session)
 
 
 @router.post("/researchers/register", response_model=ResearcherRead, status_code=status.HTTP_201_CREATED)

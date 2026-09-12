@@ -57,6 +57,30 @@ class MeRead(BaseModel):
     researcher_status: str | None = None
 
 
+class ProfileMembership(BaseModel):
+    program_id: UUID
+    program_name: str
+    program_slug: str
+    role: str  # staff program role, or "member" for researchers
+    joined_at: datetime
+
+
+class ProfileRead(BaseModel):
+    kind: Literal["staff", "researcher"]
+    id: UUID
+    email: EmailStr
+    name: str
+    global_role: str | None = None
+    researcher_status: str | None = None
+    portfolio_url: str | None = None
+    memberships: list[ProfileMembership]
+
+
+class ProfileUpdate(BaseModel):
+    name: str | None = Field(default=None, max_length=200)
+    portfolio_url: str | None = Field(default=None, max_length=500)  # researchers only
+
+
 # --- Programs ------------------------------------------------------------
 class ProgramCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
@@ -218,6 +242,7 @@ class ReportTriageUpdate(BaseModel):
 class CommentCreate(BaseModel):
     body: str = Field(min_length=1)
     internal_only: bool = False
+    attachments: list[AttachmentIn] = Field(default_factory=list, max_length=10)
 
 
 class CommentRead(BaseModel):
@@ -226,6 +251,7 @@ class CommentRead(BaseModel):
     internal_only: bool
     author_kind: Literal["staff", "researcher"]
     author_name: str
+    attachments: list[AttachmentOut]
     created_at: datetime
 
 

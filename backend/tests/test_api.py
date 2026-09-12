@@ -425,3 +425,67 @@ async def test_scope_csv_import(admin_client, client):
         files={"file": ("bad.csv", b"foo,bar\n1,2\n", "text/csv")},
     )
     assert bad.status_code == 400
+
+
+async def test_comment_attachments(admin_client, client, make_client):
+    program_id = client.ids["program_id"]
+    invite = (await admin_client.post(f"/api/programs/{program_id}/invites", json={"email": "catt@test.com"})).json()
+    researcher = await make_client()
+    await researcher.post("/api/auth/researchers/register", json={"token": invite["token"], "password": "res12345"})
+    report = (
+        await researcher.post("/api/reports", json={"program_id": program_id, "title": "with files", "severity": "low"})
+    ).json()
+
+    resp = await admin_client.post(
+        f"/api/reports/{report['id']}/comments",
+        json={"body": "see attached", "attachments": [{"key": "attachments/abc/poc.png", "name": "poc.png"}]},
+    )
+    assert resp.status_code == 201, resp.text
+    assert resp.json()["attachments"][0]["name"] == "poc.png"
+
+    # the report owner sees the comment and its attachments (no presigned url: storage off in tests)
+    comments = (await researcher.get(f"/api/reports/{report['id']}/comments")).json()
+    assert len(comments) == 1
+    assert comments[0]["attachments"][0]["key"] == "attachments/abc/poc.png"
+    assert comments[0]["attachments"][0]["url"] is None
+
+    # more than 10 attachments is rejected
+    many = [{"key": f"k{i}", "name": f"f{i}.png"} for i in range(11)]
+    resp = await admin_client.post(
+        f"/api/reports/{report['id']}/comments", json={"body": "x", "attachments": many}
+    )
+    assert resp.status_code == 422
+
+
+async def test_profile_get_and_update(admin_client, client, make_client):
+    program_id = client.ids["program_id"]
+
+    resp = await admin_client.get("/api/me/profile")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["kind"] == "staff" and body["email"] == "admin@test.com"
+
+    patched = await admin_client.patch("/api/me", json={"name": "Renamed Admin"})
+    assert patched.json()["name"] == "Renamed Admin"
+    assert (await admin_client.get("/api/me")).json()["name"] == "Renamed Admin"
+
+    staff_listing = await admin_client.get("/api/staff")
+    admin_id = next(s["id"] for s in staff_listing.json() if s["email"] == "admin@test.com")
+    await admin_client.post(f"/api/programs/{program_id}/roles", json={"staff_id": admin_id, "role": "owner"})
+    prof = (await admin_client.get("/api/me/profile")).json()
+    match = next(m for m in prof["memberships"] if m["program_slug"] == "test-program")
+    assert match["role"] == "owner"
+
+    # researcher profile: membership list + name/portfolio update
+    invite = (await admin_client.post(f"/api/programs/{program_id}/invites", json={"email": "prof@test.com"})).json()
+    researcher = await make_client()
+    await researcher.post(
+        "/api/auth/researchers/register", json={"token": invite["token"], "password": "res12345", "name": "Prof"}
+    )
+    prof = (await researcher.get("/api/me/profile")).json()
+    assert prof["kind"] == "researcher" and prof["portfolio_url"] is None
+    assert any(m["role"] == "member" and m["program_slug"] == "test-program" for m in prof["memberships"])
+
+    patched = await researcher.patch("/api/me", json={"name": "Prof X", "portfolio_url": "https://prof.example.com"})
+    assert patched.json()["name"] == "Prof X"
+    assert patched.json()["portfolio_url"] == "https://prof.example.com"
