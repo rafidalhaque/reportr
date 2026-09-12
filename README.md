@@ -75,14 +75,13 @@ reports lock for editing once triage moves past `triaging`.
 
 ## Development
 
-Backend (Python 3.12+):
+Backend (Python 3.12+, dependencies managed with [uv](https://docs.astral.sh/uv/)):
 
 ```bash
 cd backend
-python -m venv .venv
-.venv/Scripts/pip install -r requirements-dev.txt   # POSIX: .venv/bin/pip
-.venv/Scripts/pytest                                # tests run on in-memory SQLite
-.venv/Scripts/uvicorn app.main:app --reload         # needs DATABASE_URL (Postgres) for real runs
+uv sync                                    # creates .venv from pyproject.toml + uv.lock
+uv run pytest                              # tests run on in-memory SQLite
+uv run uvicorn app.main:app --reload       # needs DATABASE_URL (Postgres) for real runs
 ```
 
 Frontend (Node 20+):
