@@ -12,7 +12,7 @@ import {
   Trash2,
   UserPlus,
 } from "lucide-react";
-import { apiDelete, apiGet, apiPatch, apiPost, errMessage, postForm } from "@/lib/api";
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut, errMessage, postForm } from "@/lib/api";
 import {
   PROGRAM_ROLES,
   PROGRAM_STATUSES,
@@ -31,6 +31,7 @@ import type {
   Report,
   Researcher,
   ScopeEntry,
+  EmailConfigSettings,
   ScopeImportResult,
   StaffMember,
 } from "@/lib/types";
@@ -655,6 +656,188 @@ function ScopeTab({ programId }: { programId: string }) {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+/* -------------------------- Program email (#3) ---------------------------- */
+
+/** Per-program SMTP override (todo #3): when enabled it wins over the platform SMTP. */
+function ProgramEmailCard({ programId }: { programId: string }) {
+  const [config, setConfig] = useState<EmailConfigSettings | null>(null);
+  const [password, setPassword] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  const load = useCallback(() => {
+    apiGet<EmailConfigSettings>(`/programs/${programId}/email-settings`)
+      .then(setConfig)
+      .catch((e) => setError(errMessage(e)))
+      .finally(() => setLoading(false));
+  }, [programId]);
+
+  useEffect(load, [load]);
+
+  function set<K extends keyof EmailConfigSettings>(key: K, value: EmailConfigSettings[K]) {
+    setConfig((prev) => (prev ? { ...prev, [key]: value } : prev));
+  }
+
+  async function save(event: React.FormEvent) {
+    event.preventDefault();
+    if (!config) return;
+    setSaving(true);
+    setError("");
+    setSaved(false);
+    try {
+      setConfig(
+        await apiPut<EmailConfigSettings>(`/programs/${programId}/email-settings`, {
+          enabled: config.enabled,
+          smtp_host: config.smtp_host || null,
+          smtp_port: config.smtp_port || null,
+          smtp_username: config.smtp_username || null,
+          smtp_password: password || null, // omitted/empty keeps the stored password
+          smtp_use_tls: config.smtp_use_tls,
+          from_email: config.from_email || null,
+          from_name: config.from_name || null,
+          notify_email: config.notify_email || null,
+        })
+      );
+      setPassword("");
+      setSaved(true);
+    } catch (err) {
+      setError(errMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Mail className="h-4 w-4" />
+          Email notifications (SMTP override)
+        </CardTitle>
+        <CardDescription>
+          Send this program&apos;s notification emails (new reports, status changes, comments,
+          invites) through its own SMTP server. When disabled, the platform email settings
+          apply.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {error && <ErrorAlert>{error}</ErrorAlert>}
+        {saved && <SuccessAlert>Email settings saved.</SuccessAlert>}
+        {loading || !config ? (
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading…
+          </div>
+        ) : (
+          <form onSubmit={save} className="space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <Label htmlFor="prog-email-enabled">Use this program&apos;s own SMTP</Label>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {config.enabled
+                    ? "Enabled — this program sends from its own server."
+                    : "Disabled — platform email settings apply."}
+                </p>
+              </div>
+              <Switch
+                id="prog-email-enabled"
+                checked={config.enabled}
+                onCheckedChange={(v) => set("enabled", v)}
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="prog-smtp-host">SMTP host</Label>
+                <Input
+                  id="prog-smtp-host"
+                  value={config.smtp_host ?? ""}
+                  onChange={(e) => set("smtp_host", e.target.value)}
+                  placeholder="smtp.program.example.com"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="prog-smtp-port">SMTP port</Label>
+                <Input
+                  id="prog-smtp-port"
+                  type="number"
+                  value={config.smtp_port ?? ""}
+                  onChange={(e) => set("smtp_port", e.target.value ? Number(e.target.value) : null)}
+                  placeholder="587"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="prog-smtp-user">SMTP username</Label>
+                <Input
+                  id="prog-smtp-user"
+                  value={config.smtp_username ?? ""}
+                  onChange={(e) => set("smtp_username", e.target.value)}
+                  autoComplete="off"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="prog-smtp-pass">SMTP password</Label>
+                <Input
+                  id="prog-smtp-pass"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={config.smtp_password_set ? "•••• saved — leave blank to keep" : "Not set"}
+                  autoComplete="new-password"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="prog-from-email">From email</Label>
+                <Input
+                  id="prog-from-email"
+                  type="email"
+                  value={config.from_email ?? ""}
+                  onChange={(e) => set("from_email", e.target.value)}
+                  placeholder={`bounty@${programId.slice(0, 4)}.example.com`}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="prog-from-name">From name</Label>
+                <Input
+                  id="prog-from-name"
+                  value={config.from_name ?? ""}
+                  onChange={(e) => set("from_name", e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="prog-notify-email">Triage inbox (notification recipient)</Label>
+                <Input
+                  id="prog-notify-email"
+                  type="email"
+                  value={config.notify_email ?? ""}
+                  onChange={(e) => set("notify_email", e.target.value)}
+                  placeholder="triage@program.example.com"
+                />
+              </div>
+              <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={config.smtp_use_tls}
+                  onChange={(e) => set("smtp_use_tls", e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                Use STARTTLS
+              </label>
+            </div>
+
+            <Button type="submit" disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              Save email settings
+            </Button>
+          </form>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1385,6 +1568,7 @@ function SettingsTab({
       {error && <ErrorAlert>{error}</ErrorAlert>}
 
       <PublicReportingCard program={program} onSaved={onSaved} />
+      <ProgramEmailCard programId={program.id} />
 
       <form onSubmit={onSubmit} className="grid gap-6 lg:grid-cols-2">
         <Card>

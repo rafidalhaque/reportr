@@ -21,7 +21,7 @@ from app.schemas import (
     PublicReportSubmitOut,
     ScopeEntryRead,
 )
-from app.services.notifications import get_notifier
+from app.services.notifications import send_notification
 from app.services.rate_limit import rate_limit
 
 router = APIRouter(prefix="/public", tags=["public"])
@@ -104,11 +104,16 @@ async def public_apply(payload: ApplicationCreate, session: AsyncSession = Depen
     session.add(application)
     await session.commit()
     await session.refresh(application)
-    await get_notifier().notify(
+    await send_notification(
+        session,
         "new_application",
-        f"📝 New application from {email}"
-        + (f" for {program.name}" if program else "")
-        + (f" — {payload.message[:140]}" if payload.message else ""),
+        program.id if program else None,
+        {
+            "email": email,
+            "for_program": f" for {program.name}" if program else "",
+            "message": payload.message or "—",
+            "portfolio": payload.portfolio_url or "—",
+        },
     )
     return application
 
@@ -194,9 +199,18 @@ async def public_submit_report(
     session.add(report)
     await session.commit()
     await session.refresh(report)
-    await get_notifier().notify(
+    await send_notification(
+        session,
         "new_report",
-        f"🐞 New {report.severity} report in {program.name} (public form"
-        f"{' from ' + report.submitter_email if report.submitter_email else ', anonymous'}): {report.title}",
+        program.id,
+        {
+            "severity": report.severity,
+            "program": program.name,
+            "title": report.title,
+            "reference": report.id.hex[:8].upper(),
+            "reporter": report.submitter_email or "Anonymous (public form)",
+            "cwe": f"{report.cwe_id} — {report.cwe_name}" if report.cwe_id else "—",
+            "description": (report.description or "")[:600],
+        },
     )
     return PublicReportSubmitOut(id=report.id, reference=report.id.hex[:8].upper(), email=report.submitter_email)

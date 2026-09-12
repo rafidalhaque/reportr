@@ -35,16 +35,17 @@ duplicate (14/15) — nothing was dropped.
 
 ## Email & notifications
 
-- [ ] **2. Platform-wide SMTP** — add an SMTP backend next to the Telegram notifier behind
-  the existing `Notifier` interface (`app/services/notifications.py`), plus config (host,
-  port, user, pass, from-address) and per-event email routing (verify mails, invitations,
-  application decisions, report status changes, comments).
-- [ ] **3. Program-wide SMTP override** — per-program email settings (host/credentials or
-  at least from-address/endpoint) that override the platform SMTP for that program's
-  notifications. Needs a program settings extension + resolution order (program → platform).
-- [ ] **8. Email templates managed by super admin** — DB-backed templates with placeholders
-  ({{reporter}}, {{program}}, {{reference}}, {{status}}…), CRUD UI on the super-admin
-  Settings page, preview + test-send. Applies to SMTP mails and Telegram texts.
+- [x] **2. Platform-wide SMTP** — DONE: SMTP delivery added next to Telegram behind the
+  notification service (`app/services/notifications.py`); platform config lives in the DB
+  (host/port/username/password/STARTTLS/from/notify inbox) and is managed on the super-admin
+  Settings page. Notification failures never break API requests.
+- [x] **3. Program-wide SMTP override** — DONE: `program_email_settings` table + a
+  "Email notifications (SMTP override)" card in the program Settings tab. Resolution order:
+  program override (when enabled) → platform SMTP. Tested.
+- [x] **8. Email templates managed by super admin** — DONE: seeded `email_templates` rows
+  per event (new report, status change, comment, application, approval, invite) with
+  `{{placeholder}}` rendering; edit/reset/preview/test-send on the Settings page. Templates
+  drive both SMTP mails and Telegram texts.
 
 ## Programs & triage
 

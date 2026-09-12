@@ -45,8 +45,9 @@ triage it from the staff side.
   DigitalOcean Spaces) works by pointing `S3_ENDPOINT` at it. The app talks S3 API only,
   never local disk.
 - **Background jobs** — APScheduler (in-process): invite expiry
-- **Notifications** — Telegram bot behind a small `Notifier` interface (Slack/Discord/email are
-  drop-in replacements); a Null notifier logs when Telegram is unconfigured
+- **Notifications** — template-driven (super-admin editable, with preview/test-send),
+  delivered via Telegram and/or SMTP email. Platform SMTP is configured on the Settings
+  page; individual programs can override it with their own SMTP server
 
 ## Two intake paths, one pipeline
 

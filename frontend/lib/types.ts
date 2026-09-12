@@ -202,3 +202,27 @@ export interface Profile {
   portfolio_url?: string | null;
   memberships: ProfileMembership[];
 }
+
+export interface EmailConfigSettings {
+  enabled: boolean;
+  smtp_host: string | null;
+  smtp_port: number | null;
+  smtp_username: string | null;
+  smtp_password_set: boolean;
+  smtp_use_tls: boolean;
+  from_email: string | null;
+  from_name: string | null;
+  notify_email: string | null;
+}
+
+export interface EmailTemplateEntry {
+  name: string;
+  label: string;
+  subject: string;
+  body: string;
+}
+
+export interface EmailTemplatePreview {
+  subject: string;
+  body: string;
+}

@@ -12,7 +12,7 @@ from app.core.permissions import has_global_role, has_program_perm
 from app.database import get_session
 from app.models import Application, Invite, Program, ProgramRole, StaffUser
 from app.schemas import ApplicationDecision, ApplicationRead, InviteRead
-from app.services.notifications import get_notifier
+from app.services.notifications import send_notification
 
 router = APIRouter(prefix="/applications", tags=["applications"])
 
@@ -83,9 +83,12 @@ async def approve_application(
     session.add(invite)
     await session.commit()
     await session.refresh(invite)
-    await get_notifier().notify(
+    await send_notification(
+        session,
         "application_approved",
-        f"✅ Application from {application.email} approved → invite issued for {program.name}",
+        program.id,
+        {"email": application.email, "program": program.name,
+         "expires": f"{invite.expires_at:%Y-%m-%d}"},
     )
     return invite
 

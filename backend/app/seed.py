@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.database import AsyncSessionLocal
-from app.models import Org, PlatformSettings, Program, StaffUser
+from app.models import EmailTemplate, Org, PlatformEmailSettings, PlatformSettings, Program, StaffUser
+from app.services.notifications import DEFAULT_TEMPLATES
 
 logger = logging.getLogger("seed")
 
@@ -44,6 +45,18 @@ async def run_seed(session: AsyncSession | None = None) -> dict:
         if await session.get(PlatformSettings, 1) is None:
             session.add(PlatformSettings(id=1))
             logger.info("Created platform settings (researcher applications enabled)")
+
+        if await session.get(PlatformEmailSettings, 1) is None:
+            session.add(PlatformEmailSettings(id=1))
+            logger.info("Created platform email settings (SMTP disabled by default)")
+
+        existing_templates = set(
+            (await session.scalars(select(EmailTemplate.name))).all()
+        )
+        for name, defaults in DEFAULT_TEMPLATES.items():
+            if name not in existing_templates:
+                session.add(EmailTemplate(name=name, subject=defaults["subject"], body=defaults["body"]))
+                logger.info("Seeded email template '%s'", name)
 
         admin_count = await session.scalar(select(func.count()).select_from(StaffUser))
         if not admin_count:

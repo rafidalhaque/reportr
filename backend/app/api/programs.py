@@ -41,7 +41,7 @@ from app.schemas import (
     ProgramUpdate,
     ResearcherRead,
 )
-from app.services.notifications import get_notifier
+from app.services.notifications import send_notification
 
 router = APIRouter(prefix="/programs", tags=["programs"])
 
@@ -213,8 +213,11 @@ async def create_invite(
     session.add(invite)
     await session.commit()
     await session.refresh(invite)
-    await get_notifier().notify(
-        "invite_created", f"✉️ Invite created for {email} → {program.name} (expires {invite.expires_at:%Y-%m-%d})"
+    await send_notification(
+        session,
+        "invite_created",
+        program_id,
+        {"email": email, "program": program.name, "expires": f"{invite.expires_at:%Y-%m-%d}"},
     )
     return invite
 

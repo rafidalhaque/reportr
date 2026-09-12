@@ -336,3 +336,49 @@ class PlatformSettingsRead(BaseModel):
 
 class PlatformSettingsUpdate(BaseModel):
     researcher_applications_enabled: bool | None = None
+
+
+# --- Email stack (todos #2/#3/#8) --------------------------------------------
+class EmailConfigRead(BaseModel):
+    enabled: bool
+    smtp_host: str | None
+    smtp_port: int | None
+    smtp_username: str | None
+    smtp_password_set: bool  # the password itself is never returned
+    smtp_use_tls: bool
+    from_email: str | None
+    from_name: str | None
+    notify_email: str | None
+
+
+class EmailConfigUpdate(BaseModel):
+    enabled: bool | None = None
+    smtp_host: str | None = Field(default=None, max_length=255)
+    smtp_port: int | None = Field(default=None, ge=1, le=65535)
+    smtp_username: str | None = Field(default=None, max_length=255)
+    smtp_password: str | None = None  # absent/None keeps the stored password; "" clears it
+    smtp_use_tls: bool | None = None
+    from_email: str | None = Field(default=None, max_length=320)
+    from_name: str | None = Field(default=None, max_length=200)
+    notify_email: str | None = Field(default=None, max_length=320)
+
+
+class EmailTemplateRead(BaseModel):
+    name: str
+    label: str
+    subject: str
+    body: str
+
+
+class EmailTemplateUpdate(BaseModel):
+    subject: str = Field(min_length=1, max_length=300)
+    body: str = Field(min_length=1)
+
+
+class EmailTemplatePreview(BaseModel):
+    subject: str
+    body: str
+
+
+class TestSendRequest(BaseModel):
+    recipient: EmailStr | None = None

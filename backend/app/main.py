@@ -53,6 +53,7 @@ app.add_middleware(
 )
 
 from app.api import applications, auth, programs, public, reports, staff  # noqa: E402
+from app.api import email_admin as email_admin_api  # noqa: E402
 from app.api import scope as scope_api  # noqa: E402
 from app.api import settings as settings_api  # noqa: E402  (aliased: `settings` is the config object)
 
@@ -64,6 +65,7 @@ app.include_router(applications.router, prefix="/api")
 app.include_router(reports.router, prefix="/api")
 app.include_router(settings_api.router, prefix="/api")
 app.include_router(scope_api.router, prefix="/api")
+app.include_router(email_admin_api.router, prefix="/api")
 app.include_router(public.router, prefix="/api")
 
 

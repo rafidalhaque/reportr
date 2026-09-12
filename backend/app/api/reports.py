@@ -30,7 +30,7 @@ from app.schemas import (
     ReportUpdate,
     UploadOut,
 )
-from app.services.notifications import get_notifier
+from app.services.notifications import send_notification
 from app.services.storage import get_storage
 
 router = APIRouter(tags=["reports"])
@@ -197,8 +197,19 @@ async def create_report(
     session.add(report)
     await session.commit()
     report = await _load_report(session, report.id)
-    await get_notifier().notify(
-        "new_report", f"🐞 New {report.severity} report in {program.name}: {report.title}"
+    await send_notification(
+        session,
+        "new_report",
+        program.id,
+        {
+            "severity": report.severity,
+            "program": program.name,
+            "title": report.title,
+            "reference": report.id.hex[:8].upper(),
+            "reporter": researcher.name or researcher.email,
+            "cwe": f"{report.cwe_id} — {report.cwe_name}" if report.cwe_id else "—",
+            "description": (report.description or "")[:600],
+        },
     )
     return await serialize_report(report)
 
@@ -241,9 +252,17 @@ async def triage_report(
     await session.commit()
     report = await _load_report(session, report.id)
     if report.status != old_status:
-        await get_notifier().notify(
+        await send_notification(
+            session,
             "status_change",
-            f"🔄 {report.title}: {old_status} → {report.status} ({report.program.name})",
+            report.program_id,
+            {
+                "title": report.title,
+                "reference": report.id.hex[:8].upper(),
+                "program": report.program.name,
+                "old_status": old_status,
+                "new_status": report.status,
+            },
         )
     return await serialize_report(report, presign=True)
 
@@ -373,11 +392,18 @@ async def create_comment(
     session.add(comment)
     await session.commit()
     await session.refresh(comment)
-    await get_notifier().notify(
+    await send_notification(
+        session,
         "new_comment",
-        f"💬 {author_kind}: {author_name} on {report.title}"
-        + (" [internal]" if comment.internal_only else "")
-        + f": {payload.body[:120]}",
+        report.program_id,
+        {
+            "author": author_name,
+            "author_kind": author_kind,
+            "title": report.title,
+            "reference": report.id.hex[:8].upper(),
+            "internal": " [internal note]" if comment.internal_only else "",
+            "comment": payload.body[:500],
+        },
     )
     storage = get_storage()
     return CommentRead(
