@@ -320,3 +320,32 @@ async def test_platform_settings_gate_applications(admin_client, plain_client, c
 
     reenabled = await admin_client.patch("/api/settings", json={"researcher_applications_enabled": True})
     assert reenabled.json()["researcher_applications_enabled"] is True
+
+
+async def test_public_report_rate_limit(admin_client, client):
+    program_id = client.ids["program_id"]
+    await admin_client.patch(f"/api/programs/{program_id}", json={"public_reporting": True})
+    slug = (await admin_client.get(f"/api/programs/{program_id}")).json()["slug"]
+
+    for i in range(3):  # RATE_LIMIT_REPORTS=3/3600 in the test env
+        resp = await client.post(
+            f"/api/public/programs/{slug}/reports", json={"title": f"bug {i}"}
+        )
+        assert resp.status_code == 201, resp.text
+
+    limited = await client.post(
+        f"/api/public/programs/{slug}/reports", json={"title": "one too many"}
+    )
+    assert limited.status_code == 429
+    retry_after = limited.headers.get("retry-after")
+    assert retry_after is not None and int(retry_after) > 0
+
+
+async def test_public_application_rate_limit(client):
+    for i in range(2):  # RATE_LIMIT_APPLICATIONS=2/3600 in the test env
+        resp = await client.post("/api/public/applications", json={"email": f"rl{i}@example.com"})
+        assert resp.status_code == 201, resp.text
+
+    limited = await client.post("/api/public/applications", json={"email": "rl3@example.com"})
+    assert limited.status_code == 429
+    assert int(limited.headers["retry-after"]) > 0

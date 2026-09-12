@@ -1,6 +1,10 @@
 import os
 
 os.environ["ENV"] = "test"
+# Small, deterministic limits so 429 paths are testable; reset per test below.
+os.environ.setdefault("RATE_LIMIT_REPORTS", "3/3600")
+os.environ.setdefault("RATE_LIMIT_APPLICATIONS", "2/3600")
+os.environ.setdefault("TRUST_PROXY_HEADERS", "false")
 
 import pytest_asyncio
 from fastapi_users.password import PasswordHelper
@@ -12,10 +16,12 @@ import app.models  # noqa: F401
 from app.database import Base, get_session
 from app.main import app
 from app.models import Org, Program, StaffUser
+from app.services.rate_limit import reset_rate_limiters
 
 
 @pytest_asyncio.fixture
 async def db_session_factory():
+    reset_rate_limiters()
     engine = create_async_engine(
         "sqlite+aiosqlite://",
         poolclass=StaticPool,

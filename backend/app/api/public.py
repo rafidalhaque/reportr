@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.auth import load_valid_invite, mask_email
 from app.api.settings import get_or_create_settings
+from app.config import get_settings
 from app.database import get_session
 from app.models import Application, Program, Report, Researcher
 from app.schemas import (
@@ -19,6 +20,7 @@ from app.schemas import (
     PublicReportSubmitOut,
 )
 from app.services.notifications import get_notifier
+from app.services.rate_limit import rate_limit
 
 router = APIRouter(prefix="/public", tags=["public"])
 
@@ -57,7 +59,12 @@ async def invite_info(token: str, session: AsyncSession = Depends(get_session)):
     return InviteInfo(valid=True, program_name=program.name if program else None, email_masked=mask_email(invite.email))
 
 
-@router.post("/applications", response_model=ApplicationRead, status_code=201)
+@router.post(
+    "/applications",
+    response_model=ApplicationRead,
+    status_code=201,
+    dependencies=[Depends(rate_limit("public_application", get_settings().rate_limit_applications))],
+)
 async def public_apply(payload: ApplicationCreate, session: AsyncSession = Depends(get_session)):
     """Unauthenticated 'apply to join' — can be disabled platform-wide by a super admin."""
     settings = await get_or_create_settings(session)
@@ -125,7 +132,12 @@ async def public_report_form_info(slug: str, session: AsyncSession = Depends(get
     )
 
 
-@router.post("/programs/{slug}/reports", response_model=PublicReportSubmitOut, status_code=201)
+@router.post(
+    "/programs/{slug}/reports",
+    response_model=PublicReportSubmitOut,
+    status_code=201,
+    dependencies=[Depends(rate_limit("public_report", get_settings().rate_limit_reports))],
+)
 async def public_submit_report(
     slug: str, payload: PublicReportCreate, session: AsyncSession = Depends(get_session)
 ):
