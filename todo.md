@@ -46,17 +46,20 @@ duplicate (14/15) — nothing was dropped.
 
 ## Programs & triage
 
-- [ ] **4. Structured scope (separate tab, DB table, form + CSV import)** — new `scope`
-  table (program_id, asset/target, description, in/out flag, severity guide, notes) managed
-  in a dedicated program tab; add entries via form; bulk import via CSV upload. Keep
-  `scope_markdown` as a rendered overview or deprecate gradually.
+- [x] **4. Structured scope (separate tab, DB table, form + CSV import)** — DONE:
+  `program_scope` table (migration 0003) with target / description / in-scope flag /
+  severity guide; program **Scope** tab for CRUD; CSV import with header aliases
+  (target/asset/host/url/domain), flexible in/out parsing, missing-target skip and
+  case-insensitive dedupe on re-import. Members read scope via
+  `GET /api/programs/{id}/scope`; researchers see the table on their submission page.
+  `scope_markdown` kept as free-form overview, rendered alongside the table.
 - [ ] **9. Balance & payouts** — the phase-2 payout flow from spec §5: per-program bounty
   tiers, payout records (`payouts` table already exists, model-only), finance-role approval,
   reporter balance tracking, and payment method integration (bKash/Nagad/UddoktaPay or
   manual/off-platform).
-- [ ] **10. Markdown description with preview** — program description becomes markdown with
-  live preview, same treatment as scope already has in the program Settings tab
-  (`react-markdown` is already in the bundle).
+- [x] **10. Markdown description with preview** — DONE: program description is markdown
+  with live preview in the program Settings tab (description + scope preview stacked), and
+  the public landing page renders program descriptions as markdown.
 
 ## Platform & UX
 

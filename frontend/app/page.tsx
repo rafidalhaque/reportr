@@ -9,6 +9,7 @@ import { PublicHeader } from "@/components/shell";
 import { ErrorAlert } from "@/components/alerts";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Markdown } from "@/components/markdown";
 
 export default function LandingPage() {
   const [programs, setPrograms] = useState<PublicProgram[] | null>(null);
@@ -83,9 +84,11 @@ export default function LandingPage() {
                     <CardDescription>/{program.slug}</CardDescription>
                   </CardHeader>
                   <CardContent className="flex flex-1 flex-col justify-between gap-4">
-                    <p className="text-sm text-slate-600">
-                      {program.description || "No description provided."}
-                    </p>
+                    {program.description.trim() ? (
+                      <Markdown content={program.description} className="text-sm" />
+                    ) : (
+                      <p className="text-sm italic text-slate-400">No description provided.</p>
+                    )}
                     <div className="flex flex-wrap items-center gap-2">
                       <Link
                         href={`/apply?program=${program.id}`}

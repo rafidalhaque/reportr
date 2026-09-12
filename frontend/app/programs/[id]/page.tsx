@@ -12,7 +12,7 @@ import {
   Trash2,
   UserPlus,
 } from "lucide-react";
-import { apiDelete, apiGet, apiPatch, apiPost, errMessage } from "@/lib/api";
+import { apiDelete, apiGet, apiPatch, apiPost, errMessage, postForm } from "@/lib/api";
 import {
   PROGRAM_ROLES,
   PROGRAM_STATUSES,
@@ -30,6 +30,8 @@ import type {
   ProgramStats,
   Report,
   Researcher,
+  ScopeEntry,
+  ScopeImportResult,
   StaffMember,
 } from "@/lib/types";
 import { useMe } from "@/components/auth";
@@ -46,6 +48,7 @@ import {
 } from "@/components/badges";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,7 +64,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-type TabKey = "reports" | "invites" | "members" | "applications" | "roles" | "settings";
+type TabKey = "reports" | "scope" | "invites" | "members" | "applications" | "roles" | "settings";
 
 export default function ProgramPage() {
   const { me, loading } = useMe("staff");
@@ -85,6 +88,7 @@ export default function ProgramPage() {
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: "reports", label: "Reports" },
+    { key: "scope", label: "Scope" },
     { key: "invites", label: "Invites" },
     { key: "members", label: "Members" },
     { key: "applications", label: "Applications" },
@@ -138,6 +142,7 @@ export default function ProgramPage() {
             </div>
 
             {tab === "reports" && <ReportsTab programId={programId} />}
+            {tab === "scope" && <ScopeTab programId={programId} />}
             {tab === "invites" && <InvitesTab programId={programId} />}
             {tab === "members" && <MembersTab programId={programId} />}
             {tab === "applications" && <ApplicationsTab programId={programId} />}
@@ -346,6 +351,310 @@ function ReportsTab({ programId }: { programId: string }) {
           Loading reports…
         </div>
       )}
+    </div>
+  );
+}
+
+/* ------------------------------- Scope tab ------------------------------- */
+
+function ScopeTab({ programId }: { programId: string }) {
+  const [entries, setEntries] = useState<ScopeEntry[] | null>(null);
+  const [error, setError] = useState("");
+
+  // add/edit form
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [target, setTarget] = useState("");
+  const [severityGuide, setSeverityGuide] = useState("");
+  const [description, setDescription] = useState("");
+  const [inScope, setInScope] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  // csv import
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<ScopeImportResult | null>(null);
+  const [importError, setImportError] = useState("");
+
+  const loadScope = useCallback(() => {
+    apiGet<ScopeEntry[]>(`/programs/${programId}/scope`)
+      .then(setEntries)
+      .catch((e) => setError(errMessage(e)));
+  }, [programId]);
+
+  useEffect(() => {
+    loadScope();
+  }, [loadScope]);
+
+  function resetForm() {
+    setEditingId(null);
+    setTarget("");
+    setSeverityGuide("");
+    setDescription("");
+    setInScope(true);
+    setFormError("");
+  }
+
+  function startEdit(entry: ScopeEntry) {
+    setEditingId(entry.id);
+    setTarget(entry.target);
+    setSeverityGuide(entry.severity_guide ?? "");
+    setDescription(entry.description);
+    setInScope(entry.in_scope);
+    setFormError("");
+  }
+
+  async function onFormSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setSaving(true);
+    setFormError("");
+    try {
+      const payload = {
+        target,
+        severity_guide: severityGuide || undefined,
+        description,
+        in_scope: inScope,
+      };
+      if (editingId) {
+        await apiPatch(`/programs/${programId}/scope/${editingId}`, payload);
+      } else {
+        await apiPost(`/programs/${programId}/scope`, payload);
+      }
+      resetForm();
+      loadScope();
+    } catch (err) {
+      setFormError(errMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onDelete(entry: ScopeEntry) {
+    if (!window.confirm(`Remove "${entry.target}" from the scope?`)) return;
+    try {
+      await apiDelete(`/programs/${programId}/scope/${entry.id}`);
+      loadScope();
+    } catch (err) {
+      setError(errMessage(err));
+    }
+  }
+
+  async function onImport(event: React.FormEvent) {
+    event.preventDefault();
+    if (!csvFile) return;
+    setImporting(true);
+    setImportError("");
+    setImportResult(null);
+    try {
+      const result = await postForm<ScopeImportResult>(
+        `/programs/${programId}/scope/import`,
+        csvFile
+      );
+      setImportResult(result);
+      setCsvFile(null);
+      loadScope();
+    } catch (err) {
+      setImportError(errMessage(err));
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <InfoAlert>
+        Structured scope items shown to researchers (and merged with the free-form scope
+        markdown in Settings). Adding and editing requires the manage-scope permission — the
+        API will reject changes otherwise.
+      </InfoAlert>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>{editingId ? "Edit scope entry" : "Add scope entry"}</CardTitle>
+            <CardDescription>
+              One asset or pattern per entry, e.g. <code>*.example.com</code> or an API path.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={onFormSubmit} className="space-y-4">
+              {formError && <ErrorAlert>{formError}</ErrorAlert>}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="scope-target">Target *</Label>
+                <Input
+                  id="scope-target"
+                  required
+                  maxLength={200}
+                  value={target}
+                  onChange={(e) => setTarget(e.target.value)}
+                  placeholder="*.example.com or api.example.com/v1/*"
+                  className="font-mono text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="scope-in">Scope</Label>
+                  <Select
+                    id="scope-in"
+                    value={inScope ? "in" : "out"}
+                    onChange={(e) => setInScope(e.target.value === "in")}
+                  >
+                    <option value="in">In scope</option>
+                    <option value="out">Out of scope</option>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="scope-guide">Severity guide</Label>
+                  <Input
+                    id="scope-guide"
+                    maxLength={32}
+                    value={severityGuide}
+                    onChange={(e) => setSeverityGuide(e.target.value)}
+                    placeholder="up to critical"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="scope-desc">Description</Label>
+                <Textarea
+                  id="scope-desc"
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="What this asset covers, exclusions, notes…"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button type="submit" disabled={saving}>
+                  {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {editingId ? "Save changes" : "Add entry"}
+                </Button>
+                {editingId && (
+                  <Button type="button" variant="outline" onClick={resetForm}>
+                    Cancel
+                  </Button>
+                )}
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Scope entries</CardTitle>
+            <CardDescription>
+              Shown to program members on their submission page.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {error && <ErrorAlert>{error}</ErrorAlert>}
+            {entries && entries.length === 0 && (
+              <p className="py-6 text-center text-sm text-slate-500">
+                No structured scope entries yet — add one or import a CSV.
+              </p>
+            )}
+            {entries && entries.length > 0 && (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Target</TableHead>
+                    <TableHead>Scope</TableHead>
+                    <TableHead>Severity guide</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {entries.map((entry) => (
+                    <TableRow key={entry.id}>
+                      <TableCell className="font-mono text-xs">{entry.target}</TableCell>
+                      <TableCell>
+                        {entry.in_scope ? (
+                          <Badge color="green">In scope</Badge>
+                        ) : (
+                          <Badge color="slate">Out of scope</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-slate-600">
+                        {entry.severity_guide ?? "—"}
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate text-slate-600" title={entry.description}>
+                        {entry.description || "—"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(entry)}
+                          className="mr-2 text-xs font-medium text-indigo-600 hover:underline"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDelete(entry)}
+                          className="text-xs font-medium text-red-600 hover:underline"
+                        >
+                          Delete
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+            {!entries && !error && (
+              <div className="flex items-center gap-2 text-sm text-slate-500">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading scope…
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Import scope from CSV</CardTitle>
+          <CardDescription>
+            Header row required: <code>target</code> (column aliases: asset, host, url,
+            domain); optional <code>description</code>, <code>in_scope</code>
+            {" "}(<em>in/out, yes/no, true/false</em>), <code>severity_guide</code>. Rows
+            without a target are skipped; existing targets are not duplicated.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onImport} className="flex flex-wrap items-center gap-3">
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)}
+              className="text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
+              aria-label="CSV file to import"
+            />
+            <Button type="submit" variant="outline" disabled={!csvFile || importing}>
+              {importing && <Loader2 className="h-4 w-4 animate-spin" />}
+              Import
+            </Button>
+          </form>
+          {importResult && (
+            <div className="mt-3">
+              <SuccessAlert>
+                Imported {importResult.created} entr{importResult.created === 1 ? "y" : "ies"}
+                {importResult.skipped > 0 && ` · skipped ${importResult.skipped}`}
+              </SuccessAlert>
+            </div>
+          )}
+          {importError && (
+            <div className="mt-3">
+              <ErrorAlert>{importError}</ErrorAlert>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -1159,15 +1468,32 @@ function SettingsTab({
 
         <Card className="h-fit lg:sticky lg:top-6">
           <CardHeader>
-            <CardTitle>Scope preview</CardTitle>
-            <CardDescription>Rendered markdown as researchers will see it.</CardDescription>
+            <CardTitle>Preview</CardTitle>
+            <CardDescription>
+              Rendered markdown as researchers and visitors will see it.
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            {scopeMarkdown.trim() ? (
-              <Markdown content={scopeMarkdown} />
-            ) : (
-              <p className="text-sm italic text-slate-400">No scope defined yet.</p>
-            )}
+          <CardContent className="space-y-6">
+            <div>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
+                Description
+              </p>
+              {description.trim() ? (
+                <Markdown content={description} />
+              ) : (
+                <p className="text-sm italic text-slate-400">No description yet.</p>
+              )}
+            </div>
+            <div className="border-t border-slate-100 pt-4">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
+                Scope
+              </p>
+              {scopeMarkdown.trim() ? (
+                <Markdown content={scopeMarkdown} />
+              ) : (
+                <p className="text-sm italic text-slate-400">No scope defined yet.</p>
+              )}
+            </div>
           </CardContent>
         </Card>
       </form>

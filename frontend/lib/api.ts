@@ -125,12 +125,14 @@ export function logout(kind: "staff" | "researchers"): Promise<void> {
 
 /** Multipart upload (form field "file") → keep {key, name} to attach to a report. */
 export function uploadFile(file: File): Promise<{ key: string; name: string }> {
+  return postForm<{ key: string; name: string }>("/uploads", file);
+}
+
+/** Generic multipart POST (field name "file", e.g. CSV import endpoints). */
+export function postForm<T>(path: string, file: File): Promise<T> {
   const form = new FormData();
   form.append("file", file);
-  return apiFetch<{ key: string; name: string }>("/uploads", {
-    method: "POST",
-    body: form,
-  });
+  return apiFetch<T>(path, { method: "POST", body: form });
 }
 
 /** Human-friendly message for a failed login (fastapi-users detail codes). */

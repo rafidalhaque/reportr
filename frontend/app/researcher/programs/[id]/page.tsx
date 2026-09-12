@@ -7,7 +7,7 @@ import { ArrowLeft, Loader2, Send } from "lucide-react";
 import { apiGet, apiPost, errMessage } from "@/lib/api";
 import { SEVERITIES } from "@/lib/constants";
 import { titleCase } from "@/lib/utils";
-import type { ProgramDetail, Report, UploadOut } from "@/lib/types";
+import type { ProgramDetail, Report, ScopeEntry, UploadOut } from "@/lib/types";
 import { useMe } from "@/components/auth";
 import { AppHeader, FullPageLoader } from "@/components/shell";
 import { ErrorAlert, InfoAlert } from "@/components/alerts";
@@ -28,6 +28,7 @@ export default function ResearcherProgramPage() {
   const programId = typeof params?.id === "string" ? params.id : "";
 
   const [program, setProgram] = useState<ProgramDetail | null>(null);
+  const [scopeEntries, setScopeEntries] = useState<ScopeEntry[]>([]);
   const [error, setError] = useState("");
 
   // Report form
@@ -46,6 +47,9 @@ export default function ResearcherProgramPage() {
     apiGet<ProgramDetail>(`/programs/${programId}`)
       .then(setProgram)
       .catch((e) => setError(errMessage(e)));
+    apiGet<ScopeEntry[]>(`/programs/${programId}/scope`)
+      .then(setScopeEntries)
+      .catch(() => setScopeEntries([])); // scope list is optional sugar; markdown still renders
   }, [programId]);
 
   if (loading || !me) return <FullPageLoader />;
@@ -109,10 +113,56 @@ export default function ResearcherProgramPage() {
               <CardDescription>Read the scope carefully before reporting.</CardDescription>
             </CardHeader>
             <CardContent>
+              {scopeEntries.length > 0 && (
+                <div className="mb-4 overflow-hidden rounded-md border border-slate-200">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-slate-500">
+                      <tr>
+                        <th className="px-3 py-2 font-medium">Target</th>
+                        <th className="px-3 py-2 font-medium">Scope</th>
+                        <th className="px-3 py-2 font-medium">Severity guide</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {scopeEntries.map((entry) => (
+                        <tr key={entry.id}>
+                          <td className="px-3 py-2 font-mono text-slate-800">
+                            {entry.target}
+                            {entry.description && (
+                              <div className="mt-0.5 font-sans text-slate-500">{entry.description}</div>
+                            )}
+                          </td>
+                          <td className="px-3 py-2">
+                            {entry.in_scope ? (
+                              <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                                In
+                              </span>
+                            ) : (
+                              <span className="rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-600 ring-1 ring-inset ring-slate-200">
+                                Out
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2 text-slate-600">{entry.severity_guide ?? "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
               {program.scope_markdown.trim() ? (
-                <Markdown content={program.scope_markdown} />
+                <>
+                  {scopeEntries.length > 0 && (
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
+                      General scope notes
+                    </p>
+                  )}
+                  <Markdown content={program.scope_markdown} />
+                </>
               ) : (
-                <p className="text-sm italic text-slate-400">No scope defined for this program.</p>
+                scopeEntries.length === 0 && (
+                  <p className="text-sm italic text-slate-400">No scope defined for this program.</p>
+                )
               )}
             </CardContent>
           </Card>

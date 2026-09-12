@@ -44,6 +44,20 @@ export interface ProgramStats {
   members: number;
 }
 
+export interface ScopeEntry {
+  id: string;
+  target: string;
+  description: string;
+  in_scope: boolean;
+  severity_guide: string | null;
+  created_at: string;
+}
+
+export interface ScopeImportResult {
+  created: number;
+  skipped: number;
+}
+
 export interface Invite {
   id: string;
   email: string;
