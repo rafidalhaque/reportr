@@ -73,7 +73,7 @@ export default function InvitePage() {
           <Card className="mx-auto max-w-md">
             <CardContent className="p-8">
               <ErrorAlert>{loadError}</ErrorAlert>
-              <p className="mt-3 text-sm text-slate-500">
+              <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
                 This invite link may be malformed. Ask the program team to resend it.
               </p>
             </CardContent>
@@ -84,8 +84,8 @@ export default function InvitePage() {
           <Card className="mx-auto max-w-md">
             <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
               <ShieldX className="h-10 w-10 text-red-400" />
-              <h1 className="text-lg font-semibold text-slate-900">Invite not valid</h1>
-              <p className="text-sm text-slate-600">{info.reason || "This invite cannot be used."}</p>
+              <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Invite not valid</h1>
+              <p className="text-sm text-slate-600 dark:text-slate-300">{info.reason || "This invite cannot be used."}</p>
               <Link href="/" className={buttonVariants({ variant: "outline", size: "sm" })}>
                 Back to home
               </Link>
@@ -99,7 +99,7 @@ export default function InvitePage() {
               <CardTitle>Join {info.program_name || "the program"}</CardTitle>
               <CardDescription>
                 This invite was issued for{" "}
-                <strong className="font-medium text-slate-700">{info.email_masked}</strong>. Set a
+                <strong className="font-medium text-slate-700 dark:text-slate-300">{info.email_masked}</strong>. Set a
                 password to activate your researcher account.
               </CardDescription>
             </CardHeader>
@@ -156,7 +156,7 @@ export default function InvitePage() {
 
         {!checking && !token && !loadError && (
           <Card className="mx-auto max-w-md">
-            <CardContent className="p-8 text-center text-sm text-slate-500">
+            <CardContent className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
               Missing invite token.
             </CardContent>
           </Card>

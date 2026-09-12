@@ -31,10 +31,10 @@ export default function LandingPage() {
             <ShieldCheck className="h-3.5 w-3.5" />
             Coordinated vulnerability disclosure
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-4xl">
             Hunt bugs. Get recognized.
           </h1>
-          <p className="mt-3 text-base text-slate-600">
+          <p className="mt-3 text-base text-slate-600 dark:text-slate-300">
             Report security issues to our programs, triage with our team, and earn
             recognition for valid findings. Researchers can apply to join at any time.
           </p>
@@ -51,8 +51,8 @@ export default function LandingPage() {
 
         <section className="mt-14">
           <div className="mb-4 flex items-baseline justify-between">
-            <h2 className="text-xl font-semibold text-slate-900">Public programs</h2>
-            <span className="text-sm text-slate-500">
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Public programs</h2>
+            <span className="text-sm text-slate-500 dark:text-slate-400">
               {programs ? `${programs.length} active` : ""}
             </span>
           </div>
@@ -60,7 +60,7 @@ export default function LandingPage() {
           {error && <ErrorAlert>{error}</ErrorAlert>}
 
           {!programs && !error && (
-            <div className="flex items-center gap-2 py-10 text-sm text-slate-500">
+            <div className="flex items-center gap-2 py-10 text-sm text-slate-500 dark:text-slate-400">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading programs…
             </div>
@@ -68,7 +68,7 @@ export default function LandingPage() {
 
           {programs && programs.length === 0 && (
             <Card>
-              <CardContent className="p-8 text-center text-sm text-slate-500">
+              <CardContent className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
                 No public programs are accepting submissions right now. Check back soon
                 or apply to join and get notified about new programs.
               </CardContent>
@@ -115,7 +115,7 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-slate-200 py-6 text-center text-xs text-slate-400">
+      <footer className="border-t border-slate-200 dark:border-slate-800 py-6 text-center text-xs text-slate-400">
         Reportr — self-hosted, coordinated disclosure.
       </footer>
     </div>

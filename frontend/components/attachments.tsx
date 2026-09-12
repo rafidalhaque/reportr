@@ -71,7 +71,7 @@ export function AttachmentsPicker({
           {value.map((attachment, index) => (
             <li
               key={`${attachment.key}-${index}`}
-              className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-700"
+              className="flex items-center justify-between gap-2 rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-300"
             >
               <span className="truncate">
                 <Paperclip className="mr-1.5 inline h-3 w-3 text-slate-400" />

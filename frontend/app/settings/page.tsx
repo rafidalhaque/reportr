@@ -70,8 +70,8 @@ function PlatformSettingsPanel({ me }: { me: Me }) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Platform settings</h1>
-        <p className="text-sm text-slate-500">Organization-wide switches, applied immediately.</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Platform settings</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Organization-wide switches, applied immediately.</p>
       </div>
 
       {error && <ErrorAlert>{error}</ErrorAlert>}
@@ -93,7 +93,7 @@ function PlatformSettingsPanel({ me }: { me: Me }) {
             <CardContent className="flex items-center justify-between gap-4">
               <div className="space-y-0.5">
                 <Label htmlFor="applications-toggle">Public application form</Label>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   {settings?.researcher_applications_enabled
                     ? "Open — anyone can apply to join."
                     : "Closed — new applications are rejected."}

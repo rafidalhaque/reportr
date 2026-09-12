@@ -45,23 +45,23 @@ export default function ResearcherHomePage() {
         <h1 className="text-2xl font-semibold tracking-tight">
           Welcome back{me.name ? `, ${me.name}` : ""}
         </h1>
-        <p className="mb-8 text-sm text-slate-500">
+        <p className="mb-8 text-sm text-slate-500 dark:text-slate-400">
           Your programs and submitted reports at a glance.
         </p>
 
         {error && <div className="mb-6"><ErrorAlert>{error}</ErrorAlert></div>}
 
         <section className="mb-10">
-          <h2 className="mb-3 text-lg font-semibold text-slate-900">My programs</h2>
+          <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">My programs</h2>
           {!programs && (
-            <div className="flex items-center gap-2 text-sm text-slate-500">
+            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading programs…
             </div>
           )}
           {programs && programs.length === 0 && (
             <Card>
-              <CardContent className="p-8 text-center text-sm text-slate-500">
+              <CardContent className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
                 You are not a member of any program yet. You will get access once your
                 application is approved and an invite is issued.
               </CardContent>
@@ -80,7 +80,7 @@ export default function ResearcherHomePage() {
                       <CardDescription>Created {fmtDate(program.created_at)}</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <p className="line-clamp-2 text-sm text-slate-600">
+                      <p className="line-clamp-2 text-sm text-slate-600 dark:text-slate-300">
                         {program.description || "No description provided."}
                       </p>
                     </CardContent>
@@ -92,16 +92,16 @@ export default function ResearcherHomePage() {
         </section>
 
         <section>
-          <h2 className="mb-3 text-lg font-semibold text-slate-900">My reports</h2>
+          <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">My reports</h2>
           {!reports && (
-            <div className="flex items-center gap-2 text-sm text-slate-500">
+            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading reports…
             </div>
           )}
           {reports && reports.length === 0 && (
             <Card>
-              <CardContent className="p-8 text-center text-sm text-slate-500">
+              <CardContent className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
                 No reports submitted yet. Open a program above to submit your first report.
               </CardContent>
             </Card>
@@ -129,14 +129,14 @@ export default function ResearcherHomePage() {
                           {report.title}
                         </Link>
                       </TableCell>
-                      <TableCell className="text-slate-600">{report.program_name}</TableCell>
+                      <TableCell className="text-slate-600 dark:text-slate-300">{report.program_name}</TableCell>
                       <TableCell>
                         <SeverityBadge severity={report.severity} />
                       </TableCell>
                       <TableCell>
                         <ReportStatusBadge status={report.status} />
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-slate-500">
+                      <TableCell className="whitespace-nowrap text-slate-500 dark:text-slate-400">
                         {fmtDate(report.created_at)}
                       </TableCell>
                     </TableRow>

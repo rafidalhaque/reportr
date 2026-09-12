@@ -101,7 +101,7 @@ export default function ProgramPage() {
       <main>
         <Link
           href="/dashboard"
-          className="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700"
+          className="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700"
         >
           <ArrowLeft className="h-4 w-4" />
           All programs
@@ -120,7 +120,7 @@ export default function ProgramPage() {
               <span className="text-sm text-slate-400">/{program.slug}</span>
             </div>
 
-            <div className="mb-8 border-b border-slate-200">
+            <div className="mb-8 border-b border-slate-200 dark:border-slate-800">
               <nav className="-mb-px flex gap-1 overflow-x-auto" aria-label="Program sections">
                 {tabs.map((t) => (
                   <button
@@ -130,7 +130,7 @@ export default function ProgramPage() {
                     className={`whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors ${
                       tab === t.key
                         ? "border-indigo-600 text-indigo-600"
-                        : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700"
+                        : "border-transparent text-slate-500 dark:text-slate-400 hover:border-slate-300 hover:text-slate-700"
                     }`}
                     aria-current={tab === t.key ? "page" : undefined}
                   >
@@ -162,8 +162,8 @@ function StatCard({ label, value }: { label: string; value: number | undefined }
   return (
     <Card>
       <CardContent className="p-4">
-        <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</div>
-        <div className="mt-1 text-2xl font-semibold text-slate-900">
+        <div className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</div>
+        <div className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100">
           {value === undefined ? "—" : value}
         </div>
       </CardContent>
@@ -211,7 +211,7 @@ function ReportsTab({ programId }: { programId: string }) {
         <StatCard label="Pending applications" value={stats?.pending_applications} />
         <Card>
           <CardContent className="p-4">
-            <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            <div className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
               By status
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -228,7 +228,7 @@ function ReportsTab({ programId }: { programId: string }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium uppercase tracking-wide text-slate-500">Status</span>
+        <span className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Status</span>
         {["all", ...REPORT_STATUSES].map((status) => {
           const count =
             status === "all"
@@ -244,7 +244,7 @@ function ReportsTab({ programId }: { programId: string }) {
               className={`rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors ${
                 active
                   ? "bg-indigo-600 text-white"
-                  : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
+                  : "border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-slate-300 hover:text-slate-900"
               }`}
             >
               {status === "all" ? "All" : status} ({count})
@@ -259,7 +259,7 @@ function ReportsTab({ programId }: { programId: string }) {
             aria-label="Search reports"
             className="h-8 w-56 text-xs"
           />
-          <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+          <span className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
             Severity
           </span>
           <Select
@@ -282,7 +282,7 @@ function ReportsTab({ programId }: { programId: string }) {
 
       {reports && reports.length === 0 && (
         <Card>
-          <CardContent className="p-8 text-center text-sm text-slate-500">
+          <CardContent className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
             No reports submitted to this program yet.
           </CardContent>
         </Card>
@@ -290,7 +290,7 @@ function ReportsTab({ programId }: { programId: string }) {
 
       {reports && reports.length > 0 && filtered.length === 0 && (
         <Card>
-          <CardContent className="p-8 text-center text-sm text-slate-500">
+          <CardContent className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
             No reports match the current filters.
           </CardContent>
         </Card>
@@ -313,7 +313,7 @@ function ReportsTab({ programId }: { programId: string }) {
             <TableBody>
               {filtered.map((report) => (
                 <TableRow key={report.id}>
-                  <TableCell className="font-mono text-xs font-medium text-slate-500">
+                  <TableCell className="font-mono text-xs font-medium text-slate-500 dark:text-slate-400">
                     {report.reference}
                   </TableCell>
                   <TableCell>
@@ -330,11 +330,11 @@ function ReportsTab({ programId }: { programId: string }) {
                   <TableCell>
                     <ReportStatusBadge status={report.status} />
                   </TableCell>
-                  <TableCell className="text-slate-600">{report.researcher_name}</TableCell>
-                  <TableCell className="text-slate-600">
+                  <TableCell className="text-slate-600 dark:text-slate-300">{report.researcher_name}</TableCell>
+                  <TableCell className="text-slate-600 dark:text-slate-300">
                     {report.assigned_staff_name ?? "—"}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap text-slate-500">
+                  <TableCell className="whitespace-nowrap text-slate-500 dark:text-slate-400">
                     {fmtDate(report.created_at)}
                   </TableCell>
                 </TableRow>
@@ -345,7 +345,7 @@ function ReportsTab({ programId }: { programId: string }) {
       )}
 
       {!reports && !error && (
-        <div className="flex items-center gap-2 text-sm text-slate-500">
+        <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading reports…
         </div>
@@ -552,7 +552,7 @@ function ScopeTab({ programId }: { programId: string }) {
           <CardContent>
             {error && <ErrorAlert>{error}</ErrorAlert>}
             {entries && entries.length === 0 && (
-              <p className="py-6 text-center text-sm text-slate-500">
+              <p className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
                 No structured scope entries yet — add one or import a CSV.
               </p>
             )}
@@ -578,10 +578,10 @@ function ScopeTab({ programId }: { programId: string }) {
                           <Badge color="slate">Out of scope</Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-slate-600">
+                      <TableCell className="text-slate-600 dark:text-slate-300">
                         {entry.severity_guide ?? "—"}
                       </TableCell>
-                      <TableCell className="max-w-xs truncate text-slate-600" title={entry.description}>
+                      <TableCell className="max-w-xs truncate text-slate-600 dark:text-slate-300" title={entry.description}>
                         {entry.description || "—"}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-right">
@@ -606,7 +606,7 @@ function ScopeTab({ programId }: { programId: string }) {
               </Table>
             )}
             {!entries && !error && (
-              <div className="flex items-center gap-2 text-sm text-slate-500">
+              <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Loading scope…
               </div>
@@ -631,7 +631,7 @@ function ScopeTab({ programId }: { programId: string }) {
               type="file"
               accept=".csv,text/csv"
               onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)}
-              className="text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
+              className="text-sm text-slate-600 dark:text-slate-300 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
               aria-label="CSV file to import"
             />
             <Button type="submit" variant="outline" disabled={!csvFile || importing}>
@@ -757,7 +757,7 @@ function InvitesTab({ programId }: { programId: string }) {
 
       {invites && invites.length === 0 && (
         <Card>
-          <CardContent className="p-8 text-center text-sm text-slate-500">
+          <CardContent className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
             No invites created yet.
           </CardContent>
         </Card>
@@ -779,19 +779,19 @@ function InvitesTab({ programId }: { programId: string }) {
             <TableBody>
               {invites.map((invite) => (
                 <TableRow key={invite.id}>
-                  <TableCell className="font-medium text-slate-800">{invite.email}</TableCell>
+                  <TableCell className="font-medium text-slate-800 dark:text-slate-200">{invite.email}</TableCell>
                   <TableCell>
                     <InviteStatusBadge invite={invite} />
                   </TableCell>
-                  <TableCell className="whitespace-nowrap text-slate-500">
+                  <TableCell className="whitespace-nowrap text-slate-500 dark:text-slate-400">
                     {fmtDate(invite.created_at)}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap text-slate-500">
+                  <TableCell className="whitespace-nowrap text-slate-500 dark:text-slate-400">
                     {fmtDate(invite.expires_at)}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <code className="max-w-[220px] truncate rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">
+                      <code className="max-w-[220px] truncate rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-xs text-slate-600 dark:text-slate-300">
                         {origin}/invite/{invite.token}
                       </code>
                       <Button
@@ -824,7 +824,7 @@ function InvitesTab({ programId }: { programId: string }) {
       )}
 
       {!invites && !error && (
-        <div className="flex items-center gap-2 text-sm text-slate-500">
+        <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading invites…
         </div>
@@ -866,7 +866,7 @@ function MembersTab({ programId }: { programId: string }) {
 
       {members && members.length === 0 && (
         <Card>
-          <CardContent className="p-8 text-center text-sm text-slate-500">
+          <CardContent className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
             No members yet. Invite researchers from the Invites tab.
           </CardContent>
         </Card>
@@ -886,8 +886,8 @@ function MembersTab({ programId }: { programId: string }) {
             <TableBody>
               {members.map((member) => (
                 <TableRow key={member.id}>
-                  <TableCell className="font-medium text-slate-800">{member.name}</TableCell>
-                  <TableCell className="text-slate-600">{member.email}</TableCell>
+                  <TableCell className="font-medium text-slate-800 dark:text-slate-200">{member.name}</TableCell>
+                  <TableCell className="text-slate-600 dark:text-slate-300">{member.email}</TableCell>
                   <TableCell>
                     <ResearcherStatusBadge status={member.status} />
                   </TableCell>
@@ -905,7 +905,7 @@ function MembersTab({ programId }: { programId: string }) {
       )}
 
       {!members && !error && (
-        <div className="flex items-center gap-2 text-sm text-slate-500">
+        <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading members…
         </div>
@@ -977,7 +977,7 @@ function ApplicationsTab({ programId }: { programId: string }) {
             <span>
               Invite created for <strong>{approved.email}</strong>. Share their invite link:
             </span>
-            <code className="rounded bg-white/70 px-1.5 py-0.5 text-xs">
+            <code className="rounded bg-white dark:bg-slate-900/70 px-1.5 py-0.5 text-xs">
               {origin}/invite/{approved.token}
             </code>
             <button
@@ -1004,7 +1004,7 @@ function ApplicationsTab({ programId }: { programId: string }) {
 
       {apps && apps.length === 0 && (
         <Card>
-          <CardContent className="p-8 text-center text-sm text-slate-500">
+          <CardContent className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
             No pending applications for this program.
           </CardContent>
         </Card>
@@ -1046,7 +1046,7 @@ function ApplicationsTab({ programId }: { programId: string }) {
               {(app.message || app.portfolio_url) && (
                 <CardContent className="space-y-2">
                   {app.message && (
-                    <p className="whitespace-pre-wrap rounded-md bg-slate-50 p-3 text-sm text-slate-700">
+                    <p className="whitespace-pre-wrap rounded-md bg-slate-50 dark:bg-slate-800/60 p-3 text-sm text-slate-700 dark:text-slate-300">
                       {app.message}
                     </p>
                   )}
@@ -1068,7 +1068,7 @@ function ApplicationsTab({ programId }: { programId: string }) {
       )}
 
       {!apps && !error && (
-        <div className="flex items-center gap-2 text-sm text-slate-500">
+        <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading applications…
         </div>
@@ -1183,7 +1183,7 @@ function RolesTab({ programId }: { programId: string }) {
 
       {roles && roles.length === 0 && (
         <Card>
-          <CardContent className="p-8 text-center text-sm text-slate-500">
+          <CardContent className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
             No staff assigned to this program yet.
           </CardContent>
         </Card>
@@ -1203,10 +1203,10 @@ function RolesTab({ programId }: { programId: string }) {
             <TableBody>
               {roles.map((entry) => (
                 <TableRow key={entry.id}>
-                  <TableCell className="font-medium text-slate-800">
+                  <TableCell className="font-medium text-slate-800 dark:text-slate-200">
                     {entry.staff_name || "—"}
                   </TableCell>
-                  <TableCell className="text-slate-600">{entry.staff_email}</TableCell>
+                  <TableCell className="text-slate-600 dark:text-slate-300">{entry.staff_email}</TableCell>
                   <TableCell>
                     <ProgramRoleBadge role={entry.role} />
                   </TableCell>
@@ -1224,7 +1224,7 @@ function RolesTab({ programId }: { programId: string }) {
       )}
 
       {!roles && !error && (
-        <div className="flex items-center gap-2 text-sm text-slate-500">
+        <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading roles…
         </div>
@@ -1289,7 +1289,7 @@ function PublicReportingCard({
         <div className="flex items-center justify-between gap-4">
           <div className="space-y-0.5">
             <Label htmlFor="public-reporting-toggle">Enable public reporting</Label>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               {program.public_reporting
                 ? "Enabled — anyone with the link can submit."
                 : "Disabled — only program members can submit reports."}
@@ -1307,8 +1307,8 @@ function PublicReportingCard({
         </div>
 
         {program.public_reporting && (
-          <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
-            <code className="min-w-0 flex-1 truncate text-xs text-slate-700">{formLink}</code>
+          <div className="flex items-center gap-2 rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 px-3 py-2">
+            <code className="min-w-0 flex-1 truncate text-xs text-slate-700 dark:text-slate-300">{formLink}</code>
             <Button type="button" variant="outline" size="sm" onClick={copyLink}>
               {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
               {copied ? "Copied" : "Copy link"}
@@ -1483,7 +1483,7 @@ function SettingsTab({
                 <p className="text-sm italic text-slate-400">No description yet.</p>
               )}
             </div>
-            <div className="border-t border-slate-100 pt-4">
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
               <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
                 Scope
               </p>

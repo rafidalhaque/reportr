@@ -163,7 +163,7 @@ export default function DashboardPage() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Programs</h1>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               {isOrgAdmin
                 ? "All programs in the organization."
                 : "Programs you are assigned to."}
@@ -191,7 +191,7 @@ export default function DashboardPage() {
         {error && <ErrorAlert>{error}</ErrorAlert>}
 
         {!programs && !error && (
-          <div className="flex items-center gap-2 py-10 text-sm text-slate-500">
+          <div className="flex items-center gap-2 py-10 text-sm text-slate-500 dark:text-slate-400">
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading programs…
           </div>
@@ -199,7 +199,7 @@ export default function DashboardPage() {
 
         {programs && programs.length === 0 && (
           <Card>
-            <CardContent className="p-8 text-center text-sm text-slate-500">
+            <CardContent className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
               {isOrgAdmin
                 ? "No programs yet. Create the first one with the “New program” button."
                 : "You have not been assigned to any programs yet. An org admin can assign you a program role."}
@@ -223,7 +223,7 @@ export default function DashboardPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <p className="line-clamp-2 text-sm text-slate-600">
+                    <p className="line-clamp-2 text-sm text-slate-600 dark:text-slate-300">
                       {program.description || "No description provided."}
                     </p>
                   </CardContent>

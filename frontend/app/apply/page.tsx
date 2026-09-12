@@ -68,8 +68,8 @@ function ApplyForm() {
       <Card className="mx-auto max-w-md">
         <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
           <ShieldAlert className="h-10 w-10 text-slate-400" />
-          <h1 className="text-lg font-semibold text-slate-900">Applications are closed</h1>
-          <p className="text-sm text-slate-600">
+          <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Applications are closed</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-300">
             The researcher application form is currently disabled. Please check back later.
           </p>
           <Link href="/" className={buttonVariants({ variant: "outline", size: "sm" })}>
@@ -89,8 +89,8 @@ function ApplyForm() {
       <Card className="mx-auto max-w-md">
         <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
           <CheckCircle2 className="h-10 w-10 text-emerald-500" />
-          <h1 className="text-lg font-semibold text-slate-900">Application received</h1>
-          <p className="text-sm text-slate-600">
+          <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Application received</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-300">
             Thanks for applying. Our team reviews applications regularly — if you are
             approved, you will receive an invite link at <strong>{email}</strong>.
           </p>

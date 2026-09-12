@@ -87,7 +87,7 @@ export default function StaffLoginPage() {
               </Button>
             </form>
 
-            <p className="mt-4 text-center text-xs text-slate-500">
+            <p className="mt-4 text-center text-xs text-slate-500 dark:text-slate-400">
               Are you a researcher?{" "}
               <Link href="/researcher/login" className="font-medium text-indigo-600 hover:underline">
                 Sign in here

@@ -97,7 +97,7 @@ export default function ResearcherProgramPage() {
       <main>
         <Link
           href="/researcher"
-          className="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700"
+          className="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700"
         >
           <ArrowLeft className="h-4 w-4" />
           My workspace
@@ -116,22 +116,22 @@ export default function ResearcherProgramPage() {
             </CardHeader>
             <CardContent>
               {scopeEntries.length > 0 && (
-                <div className="mb-4 overflow-hidden rounded-md border border-slate-200">
+                <div className="mb-4 overflow-hidden rounded-md border border-slate-200 dark:border-slate-800">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 text-slate-500">
+                    <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400">
                       <tr>
                         <th className="px-3 py-2 font-medium">Target</th>
                         <th className="px-3 py-2 font-medium">Scope</th>
                         <th className="px-3 py-2 font-medium">Severity guide</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                       {scopeEntries.map((entry) => (
                         <tr key={entry.id}>
-                          <td className="px-3 py-2 font-mono text-slate-800">
+                          <td className="px-3 py-2 font-mono text-slate-800 dark:text-slate-200">
                             {entry.target}
                             {entry.description && (
-                              <div className="mt-0.5 font-sans text-slate-500">{entry.description}</div>
+                              <div className="mt-0.5 font-sans text-slate-500 dark:text-slate-400">{entry.description}</div>
                             )}
                           </td>
                           <td className="px-3 py-2">
@@ -140,12 +140,12 @@ export default function ResearcherProgramPage() {
                                 In
                               </span>
                             ) : (
-                              <span className="rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-600 ring-1 ring-inset ring-slate-200">
+                              <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 font-medium text-slate-600 dark:text-slate-300 ring-1 ring-inset ring-slate-200 dark:ring-slate-700">
                                 Out
                               </span>
                             )}
                           </td>
-                          <td className="px-3 py-2 text-slate-600">{entry.severity_guide ?? "—"}</td>
+                          <td className="px-3 py-2 text-slate-600 dark:text-slate-300">{entry.severity_guide ?? "—"}</td>
                         </tr>
                       ))}
                     </tbody>

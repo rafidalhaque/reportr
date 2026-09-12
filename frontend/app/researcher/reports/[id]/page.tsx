@@ -141,7 +141,7 @@ export default function ResearcherReportPage() {
       <main>
         <Link
           href="/researcher"
-          className="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700"
+          className="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700"
         >
           <ArrowLeft className="h-4 w-4" />
           My workspace
@@ -152,7 +152,7 @@ export default function ResearcherReportPage() {
           <SeverityBadge severity={report.severity} />
           <ReportStatusBadge status={report.status} />
         </div>
-        <p className="mb-6 text-sm text-slate-500">
+        <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
           In{" "}
           <Link
             href={`/researcher/programs/${report.program_id}`}
@@ -308,7 +308,7 @@ export default function ResearcherReportPage() {
               </CardHeader>
               <CardContent>
                 {report.repro_steps ? (
-                  <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-700">
+                  <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-700 dark:text-slate-300">
                     {report.repro_steps}
                   </pre>
                 ) : (
@@ -340,7 +340,7 @@ export default function ResearcherReportPage() {
                             <ExternalLink className="h-3 w-3" />
                           </a>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 text-slate-600">
+                          <span className="inline-flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
                             <Paperclip className="h-3.5 w-3.5 text-slate-400" />
                             {attachment.name}
                           </span>
@@ -359,18 +359,18 @@ export default function ResearcherReportPage() {
               <CardContent>
                 <dl className="grid gap-3 sm:grid-cols-2">
                   <div>
-                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Affected asset
                     </dt>
-                    <dd className="mt-0.5 break-all text-sm text-slate-800">
+                    <dd className="mt-0.5 break-all text-sm text-slate-800 dark:text-slate-200">
                       {report.affected_asset || "—"}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       CVSS
                     </dt>
-                    <dd className="mt-0.5 break-all font-mono text-xs text-slate-800">
+                    <dd className="mt-0.5 break-all font-mono text-xs text-slate-800 dark:text-slate-200">
                       {report.cvss || "—"}
                     </dd>
                   </div>
@@ -415,7 +415,7 @@ export default function ResearcherReportPage() {
                             href={attachment.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-indigo-600 hover:underline dark:border-slate-700 dark:bg-slate-900 dark:text-indigo-300"
+                            className="inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-800 bg-white px-2 py-1 text-xs font-medium text-indigo-600 hover:underline dark:border-slate-700 dark:bg-slate-900 dark:text-indigo-300"
                           >
                             <Paperclip className="h-3 w-3" />
                             {attachment.name}
@@ -424,7 +424,7 @@ export default function ResearcherReportPage() {
                         ) : (
                           <span
                             key={attachment.key}
-                            className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+                            className="inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-800 bg-white px-2 py-1 text-xs text-slate-600 dark:text-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
                           >
                             <Paperclip className="h-3 w-3" />
                             {attachment.name}

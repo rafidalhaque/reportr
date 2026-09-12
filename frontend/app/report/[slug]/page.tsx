@@ -63,8 +63,8 @@ function ClosedCard({ title, message }: { title: string; message: string }) {
     <Card className="mx-auto max-w-md">
       <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
         <ShieldAlert className="h-10 w-10 text-slate-400" />
-        <h1 className="text-lg font-semibold text-slate-900">{title}</h1>
-        <p className="text-sm text-slate-600">{message}</p>
+        <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{title}</h1>
+        <p className="text-sm text-slate-600 dark:text-slate-300">{message}</p>
         <Link href="/" className={buttonVariants({ variant: "outline", size: "sm" })}>
           Back to home
         </Link>
@@ -119,16 +119,16 @@ function ReportForm({ info }: { info: PublicReportFormInfo }) {
       <Card className="mx-auto max-w-md">
         <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
           <CheckCircle2 className="h-10 w-10 text-emerald-500" />
-          <h1 className="text-lg font-semibold text-slate-900">Report received</h1>
-          <p className="text-sm text-slate-600">
+          <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Report received</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-300">
             Thank you. Your submission to <strong>{info.program_name}</strong> is in the triage
             queue. Keep this reference for any correspondence:
           </p>
-          <p className="rounded-md bg-slate-100 px-3 py-1.5 font-mono text-sm font-semibold text-slate-800">
+          <p className="rounded-md bg-slate-100 dark:bg-slate-800 px-3 py-1.5 font-mono text-sm font-semibold text-slate-800 dark:text-slate-200">
             {result.reference}
           </p>
           {result.email && (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               We may reach out at <strong>{result.email}</strong> for follow-up questions.
             </p>
           )}

@@ -83,7 +83,7 @@ function ProfileBody({ me }: { me: NonNullable<ReturnType<typeof useMe>["me"]> }
     <AppShell me={me}>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">My profile</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">My profile</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
             {profile.email} · {isResearcher ? "Researcher" : (profile.global_role ? profile.global_role.replace("_", " ") : "Staff")}
           </p>

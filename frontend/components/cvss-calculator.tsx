@@ -143,7 +143,7 @@ export function CvssCalculator({
                       className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
                         active
                           ? "bg-indigo-600 text-white"
-                          : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+                          : "border border-slate-200 dark:border-slate-800 bg-white text-slate-600 dark:text-slate-300 hover:border-slate-300 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
                       }`}
                     >
                       {abbr}

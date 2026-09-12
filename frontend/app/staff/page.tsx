@@ -60,8 +60,8 @@ export default function StaffPage() {
           <Card>
             <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
               <ShieldX className="h-10 w-10 text-red-400" />
-              <h1 className="text-lg font-semibold text-slate-900">Super admin required</h1>
-              <p className="text-sm text-slate-600">
+              <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Super admin required</h1>
+              <p className="text-sm text-slate-600 dark:text-slate-300">
                 Only super admins can manage staff accounts.
               </p>
               <Link
@@ -130,7 +130,7 @@ export default function StaffPage() {
     <AppShell me={me}>
       <main>
         <h1 className="text-2xl font-semibold tracking-tight">Staff</h1>
-        <p className="mb-6 text-sm text-slate-500">
+        <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
           Manage staff accounts and their global roles.
         </p>
 
@@ -204,7 +204,7 @@ export default function StaffPage() {
 
         {staff && staff.length === 0 && (
           <Card>
-            <CardContent className="p-8 text-center text-sm text-slate-500">
+            <CardContent className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
               No staff accounts found.
             </CardContent>
           </Card>
@@ -225,8 +225,8 @@ export default function StaffPage() {
               <TableBody>
                 {staff.map((member) => (
                   <TableRow key={member.id}>
-                    <TableCell className="font-medium text-slate-800">{member.email}</TableCell>
-                    <TableCell className="text-slate-600">{member.name || "—"}</TableCell>
+                    <TableCell className="font-medium text-slate-800 dark:text-slate-200">{member.email}</TableCell>
+                    <TableCell className="text-slate-600 dark:text-slate-300">{member.name || "—"}</TableCell>
                     <TableCell>
                       <Select
                         value={member.global_role}
@@ -246,7 +246,7 @@ export default function StaffPage() {
                         className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
                           member.is_active
                             ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
-                            : "bg-slate-100 text-slate-500 ring-slate-200"
+                            : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 ring-slate-200 dark:ring-slate-700"
                         }`}
                       >
                         {member.is_active ? "Active" : "Disabled"}
@@ -265,7 +265,7 @@ export default function StaffPage() {
         )}
 
         {!staff && !error && (
-          <div className="flex items-center gap-2 text-sm text-slate-500">
+          <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading staff…
           </div>
