@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { apiGet, apiPatch, errMessage } from "@/lib/api";
+import { apiGet, apiPatch, apiPost, errMessage } from "@/lib/api";
 import type { Profile } from "@/lib/types";
 import { fmtDate } from "@/lib/utils";
 import { resetMe, useMe } from "@/components/auth";
 import { AppShell, FullPageLoader } from "@/components/shell";
-import { ErrorAlert, SuccessAlert } from "@/components/alerts";
+import { ErrorAlert, InfoAlert, SuccessAlert } from "@/components/alerts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -175,7 +175,160 @@ function ProfileBody({ me }: { me: NonNullable<ReturnType<typeof useMe>["me"]> }
             </CardContent>
           </Card>
         </div>
+
+        <AccountSecurityCard isResearcher={profile.kind === "researcher"} />
       </div>
     </AppShell>
+  );
+}
+
+function AccountSecurityCard({ isResearcher }: { isResearcher: boolean }) {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState("");
+  const [pwSaved, setPwSaved] = useState(false);
+
+  const [newEmail, setNewEmail] = useState("");
+  const [emailPassword, setEmailPassword] = useState("");
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailNotice, setEmailNotice] = useState("");
+  const [emailError, setEmailError] = useState("");
+
+  async function changePassword(event: React.FormEvent) {
+    event.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setPwError("New passwords do not match.");
+      return;
+    }
+    setPwSaving(true);
+    setPwError("");
+    setPwSaved(false);
+    try {
+      await apiPatch("/me/password", { current_password: currentPassword, new_password: newPassword });
+      setPwSaved(true);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      setPwError(errMessage(err));
+    } finally {
+      setPwSaving(false);
+    }
+  }
+
+  async function changeEmail(event: React.FormEvent) {
+    event.preventDefault();
+    setEmailSaving(true);
+    setEmailError("");
+    setEmailNotice("");
+    try {
+      await apiPost("/me/email", { new_email: newEmail, current_password: emailPassword });
+      setEmailNotice(
+        `A verification link was sent to ${newEmail}. Your email changes once you open it.`
+      );
+      setNewEmail("");
+      setEmailPassword("");
+    } catch (err) {
+      setEmailError(errMessage(err));
+    } finally {
+      setEmailSaving(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Account security</CardTitle>
+        <CardDescription>
+          Password changes require your current password. Email changes are confirmed via a
+          verification link sent to the new address.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-6 lg:grid-cols-2">
+        <form onSubmit={changePassword} className="space-y-4">
+          {pwSaved && <SuccessAlert>Password updated.</SuccessAlert>}
+          {pwError && <ErrorAlert>{pwError}</ErrorAlert>}
+          <div className="space-y-1.5">
+            <Label htmlFor="sec-current-pw">Current password</Label>
+            <Input
+              id="sec-current-pw"
+              type="password"
+              required
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              autoComplete="current-password"
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="sec-new-pw">New password</Label>
+              <Input
+                id="sec-new-pw"
+                type="password"
+                required
+                minLength={8}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="sec-confirm-pw">Confirm new password</Label>
+              <Input
+                id="sec-confirm-pw"
+                type="password"
+                required
+                minLength={8}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+            </div>
+          </div>
+          <Button type="submit" disabled={pwSaving}>
+            {pwSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+            Change password
+          </Button>
+        </form>
+
+        <form onSubmit={changeEmail} className="space-y-4 lg:border-l lg:border-slate-100 lg:pl-6 dark:lg:border-slate-800">
+          {emailNotice && <InfoAlert>{emailNotice}</InfoAlert>}
+          {emailError && <ErrorAlert>{emailError}</ErrorAlert>}
+          <div className="space-y-1.5">
+            <Label htmlFor="sec-new-email">New email</Label>
+            <Input
+              id="sec-new-email"
+              type="email"
+              required
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              placeholder="you@new-address.com"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="sec-email-pw">Current password</Label>
+            <Input
+              id="sec-email-pw"
+              type="password"
+              required
+              value={emailPassword}
+              onChange={(e) => setEmailPassword(e.target.value)}
+              autoComplete="current-password"
+            />
+          </div>
+          {isResearcher && (
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              You will sign in with the new email after confirming it.
+            </p>
+          )}
+          <Button type="submit" variant="outline" disabled={emailSaving}>
+            {emailSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+            Request email change
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

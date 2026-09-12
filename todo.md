@@ -86,10 +86,12 @@ duplicate (14/15) — nothing was dropped.
 
 ## Accounts
 
-- [ ] **14b. Password & email change for everyone** — change-password (re-auth with current
-  password) and change-email (confirm via verification link) for staff and researchers.
-  fastapi-users ships the underlying routes (forgot/reset password, verify email) that are
-  currently not mounted; needs SMTP (#2) for the email-verification half.
+- [x] **14b. Password & email change for everyone** — DONE: `PATCH /api/me/password`
+  (re-auth with current password) for staff and researchers; `POST /api/me/email` +
+  `/me/email/verify` change-email flow with a 1-hour verification link mailed to the new
+  address; fastapi-users forgot/reset-password routes mounted and wired to the platform SMTP
+  (reset links are `FRONTEND_URL`-based, kind-aware, rate-limited 5/h). UI: Account security
+  card on the profile page, /forgot-password, /reset-password, /verify-email pages.
 
 ## Suggested order (dependency-driven)
 

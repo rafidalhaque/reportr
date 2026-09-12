@@ -1,7 +1,10 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+import jwt as pyjwt
+from fastapi import APIRouter, Body, Depends, HTTPException, Response, status
+from fastapi_users.password import PasswordHelper
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,9 +16,10 @@ from app.core.auth import (
     staff_backend,
     staff_users,
 )
+from app.constants import EMAIL_CHANGE_AUDIENCE
 from app.core.deps import get_actor
-from app.database import get_session
-from app.models import Invite, Program, ProgramMembership, ProgramRole, Researcher
+from app.database import AsyncSessionLocal, get_session
+from app.models import Invite, Program, ProgramMembership, ProgramRole, Researcher, StaffUser
 from app.schemas import (
     MeRead,
     ProfileMembership,
@@ -24,13 +28,19 @@ from app.schemas import (
     RegisterWithInvite,
     ResearcherRead,
 )
+from app.config import get_settings
+from app.services.rate_limit import rate_limit
 
 router = APIRouter(tags=["auth"])
 me_router = APIRouter(tags=["me"])
 
 # fastapi-users login/logout, cookie-based, one namespace per user kind
 router.include_router(staff_users.get_auth_router(staff_backend), prefix="/staff")
+router.include_router(staff_users.get_reset_password_router(), prefix="/staff",
+                      dependencies=[Depends(rate_limit("forgot_password", "5/hour"))])
 router.include_router(researcher_users.get_auth_router(researcher_backend), prefix="/researchers")
+router.include_router(researcher_users.get_reset_password_router(), prefix="/researchers",
+                      dependencies=[Depends(rate_limit("forgot_password", "5/hour"))])
 
 
 def mask_email(email: str) -> str:
@@ -131,6 +141,125 @@ async def update_me(
     await session.commit()
     await session.refresh(user)
     return await _build_profile(actor, session)
+
+
+
+
+# --- Account security: password + email change (todo #14b) -------------------
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=8)
+
+
+class ChangeEmailRequest(BaseModel):
+    new_email: EmailStr
+    current_password: str
+
+
+class VerifyEmailChangeRequest(BaseModel):
+    token: str
+
+
+@me_router.patch("/me/password")
+async def change_password(
+    payload: ChangePasswordRequest,
+    actor=Depends(get_actor),
+    session: AsyncSession = Depends(get_session),
+):
+    """Authenticated password change — re-authenticates with the current password."""
+    user = actor.staff if actor.kind == "staff" else actor.researcher
+    valid, updated_hash = PasswordHelper().verify_and_update(
+        payload.current_password, user.hashed_password
+    )
+    if not valid:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Current password is incorrect")
+    user.hashed_password = PasswordHelper().hash(payload.new_password)
+    await session.commit()
+    return {"ok": True}
+
+
+def _email_change_token(user_id, new_email: str, kind: str) -> str:
+    secret = get_settings().staff_secret if kind == "staff" else get_settings().researcher_secret
+    return pyjwt.encode(
+        {"sub": str(user_id), "new_email": new_email, "kind": kind, "type": "email_change",
+         "aud": EMAIL_CHANGE_AUDIENCE,
+         "exp": datetime.now(timezone.utc) + timedelta(hours=1)},
+        secret,
+        algorithm="HS256",
+    )
+
+
+@me_router.post("/me/email")
+async def request_email_change(
+    payload: ChangeEmailRequest,
+    actor=Depends(get_actor),
+    session: AsyncSession = Depends(get_session),
+):
+    """Email change: a verification link is emailed to the NEW address."""
+    from app.services.notifications import send_user_email
+
+    user = actor.staff if actor.kind == "staff" else actor.researcher
+    valid, _ = PasswordHelper().verify_and_update(payload.current_password, user.hashed_password)
+    if not valid:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Current password is incorrect")
+    new_email = payload.new_email.lower()
+    if new_email == user.email.lower():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "That is already your email")
+    model = StaffUser if actor.kind == "staff" else Researcher
+    if await session.scalar(select(model).where(model.email == new_email)):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "That email is already in use")
+
+    kind = "staff" if actor.kind == "staff" else "researchers"
+    token = _email_change_token(user.id, new_email, kind)
+    link = f"{get_settings().frontend_url}/verify-email?token={token}"
+    sent = await send_user_email(
+        session,
+        new_email,
+        "Confirm your new email",
+        (
+            "Confirm your new email address by opening this link (valid for 1 hour):\n"
+            f"{link}\n\n"
+            "If you didn't request this, ignore this email and your address stays unchanged."
+        ),
+    )
+    if not sent:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Email delivery is not configured — ask an administrator to enable platform SMTP",
+        )
+    return {"sent": True, "new_email": new_email}
+
+
+@me_router.post("/me/email/verify")
+async def verify_email_change(
+    payload: VerifyEmailChangeRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    """Confirm an email change from the emailed link (no auth — the token is the proof)."""
+    settings = get_settings()
+    for kind, secret in (("staff", settings.staff_secret), ("researchers", settings.researcher_secret)):
+        try:
+            claims = pyjwt.decode(
+                payload.token, secret, algorithms=["HS256"], audience=EMAIL_CHANGE_AUDIENCE
+            )
+        except pyjwt.PyJWTError:
+            continue
+        if claims.get("type") != "email_change" or claims.get("kind") != kind:
+            continue
+        model = StaffUser if kind == "staff" else Researcher
+        user = await session.get(model, uuid.UUID(claims["sub"]))
+        if user is None:
+            break
+        new_email = claims["new_email"]
+        existing = await session.scalar(select(model).where(model.email == new_email))
+        if existing is not None and existing.id != user.id:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "That email is already in use")
+        user.email = new_email
+        await session.commit()
+        return {"email": new_email, "kind": kind}
+    raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid or expired verification link")
 
 
 @router.post("/researchers/register", response_model=ResearcherRead, status_code=status.HTTP_201_CREATED)

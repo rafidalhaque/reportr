@@ -93,6 +93,11 @@ export default function StaffLoginPage() {
                 Sign in here
               </Link>
             </p>
+            <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">
+              <Link href="/forgot-password?kind=staff" className="hover:underline">
+                Forgot your password?
+              </Link>
+            </p>
           </CardContent>
         </Card>
       </main>

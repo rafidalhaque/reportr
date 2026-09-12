@@ -44,6 +44,7 @@ SEVERITIES = ("info", "low", "medium", "high", "critical")
 STAFF_COOKIE = "bb_staff"
 RESEARCHER_COOKIE = "bb_researcher"
 JWT_AUDIENCE = "fastapi-users:auth"
+EMAIL_CHANGE_AUDIENCE = "reportr:email-change"
 
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 ALLOWED_UPLOAD_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp", "pdf", "txt", "md", "log", "json", "zip"}

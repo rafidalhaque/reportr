@@ -1,3 +1,5 @@
+import logging
+
 import uuid
 
 from fastapi import Depends, Response
@@ -11,14 +13,42 @@ from app.database import get_session
 from app.models import Researcher, StaffUser
 
 settings = get_settings()
+logger = logging.getLogger("account-emails")
 
 
-class StaffManager(UUIDIDMixin, BaseUserManager[StaffUser, uuid.UUID]):
+class _AccountEmailsMixin:
+    """Sends the password-reset email through the platform SMTP (todo #14b)."""
+
+    user_kind: str = "staff"
+
+    async def on_after_forgot_password(self, user, token: str, request=None) -> None:
+        from app.services.notifications import send_user_email
+
+        link = f"{settings.frontend_url}/reset-password?token={token}&kind={self.user_kind}"
+        sent = await send_user_email(
+                None,
+                user.email,
+                "Reset your password",
+                (
+                "We received a request to reset your password.\n\n"
+                f"Open this link to choose a new one (valid for 1 hour):\n{link}\n\n"
+                "If you didn't request this, you can safely ignore this email."
+                ),
+        )
+        if not sent:
+            logger.warning(
+                "password reset email for %s not sent: platform SMTP is not configured", user.email
+        )
+
+
+class StaffManager(_AccountEmailsMixin, UUIDIDMixin, BaseUserManager[StaffUser, uuid.UUID]):
+    user_kind = "staff"
     reset_password_token_secret = settings.secret
     verification_token_secret = settings.secret
 
 
-class ResearcherManager(UUIDIDMixin, BaseUserManager[Researcher, uuid.UUID]):
+class ResearcherManager(_AccountEmailsMixin, UUIDIDMixin, BaseUserManager[Researcher, uuid.UUID]):
+    user_kind = "researchers"
     reset_password_token_secret = settings.secret
     verification_token_secret = settings.secret
 
@@ -47,7 +77,7 @@ def _make_backend(name: str, cookie_name: str, secret: str) -> AuthenticationBac
         cookie_secure=settings.cookie_secure,
         cookie_samesite="lax",
         cookie_domain=settings.cookie_domain,
-    )
+)
 
     def get_strategy() -> JWTStrategy:
         return JWTStrategy(secret=secret, lifetime_seconds=settings.jwt_lifetime_seconds)
@@ -77,4 +107,4 @@ def set_auth_cookie(response: Response, backend: AuthenticationBackend, token: s
         samesite=t.cookie_samesite,
         secure=t.cookie_secure,
         domain=t.cookie_domain,
-    )
+)

@@ -12,7 +12,7 @@ import logging
 import re
 import smtplib
 import ssl
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from email.message import EmailMessage
 from email.utils import formataddr
 from uuid import UUID
@@ -23,6 +23,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
+from app.database import AsyncSessionLocal
 from app.models import EmailTemplate, PlatformEmailSettings, ProgramEmailSettings
 
 logger = logging.getLogger("notifications")
@@ -155,6 +156,19 @@ class EmailConfig:
     source: str  # "program" | "platform"
 
 
+async def resolve_platform_smtp(session: AsyncSession) -> EmailConfig | None:
+    """Platform SMTP for transactional user emails; requires host + from_email."""
+    prow = await session.get(PlatformEmailSettings, 1)
+    if prow and prow.enabled and prow.smtp_host and prow.from_email:
+        return EmailConfig(
+            host=prow.smtp_host, port=prow.smtp_port or 587, username=prow.smtp_username,
+            password=prow.smtp_password, use_tls=prow.smtp_use_tls,
+            from_email=prow.from_email, from_name=prow.from_name,
+            notify_email=prow.notify_email or "", source="platform",
+        )
+    return None
+
+
 async def resolve_email_config(session: AsyncSession, program_id: UUID | None) -> EmailConfig | None:
     """Program override first (todo #3), then platform settings (todo #2)."""
     if program_id is not None:
@@ -168,15 +182,34 @@ async def resolve_email_config(session: AsyncSession, program_id: UUID | None) -
                 from_email=row.from_email, from_name=row.from_name,
                 notify_email=row.notify_email, source="program",
             )
-    prow = await session.get(PlatformEmailSettings, 1)
-    if prow and prow.enabled and prow.smtp_host and prow.notify_email:
-        return EmailConfig(
-            host=prow.smtp_host, port=prow.smtp_port or 587, username=prow.smtp_username,
-            password=prow.smtp_password, use_tls=prow.smtp_use_tls,
-            from_email=prow.from_email, from_name=prow.from_name,
-            notify_email=prow.notify_email, source="platform",
-        )
+    platform = await resolve_platform_smtp(session)
+    if platform and platform.notify_email:
+        return platform
     return None
+
+
+async def send_user_email(
+    session: AsyncSession | None, recipient: str, subject: str, body: str
+) -> bool:
+    """Transactional email to a user via platform SMTP (todo #14b). False when SMTP is off/fails.
+
+    `session=None` opens its own (for contexts outside a request, like the reset hook)."""
+    own = session is None
+    if own:
+        session = AsyncSessionLocal()
+    try:
+        config = await resolve_platform_smtp(session)
+        if config is None:
+            return False
+        config = replace(config, notify_email=recipient)
+        await _deliver_email(config, subject, body)
+        return True
+    except Exception:
+        logger.exception("user email to %s failed", recipient)
+        return False
+    finally:
+        if own:
+            await session.close()
 
 
 def _deliver_email_sync(config: EmailConfig, subject: str, body: str) -> None:

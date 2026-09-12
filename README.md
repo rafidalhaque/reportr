@@ -32,7 +32,8 @@ The first boot migrates the database and seeds:
 
 Try the core flow: log in as admin → create an invite for your email → open
 `http://localhost:8080/invite/<token>` to activate a researcher account → submit a report →
-triage it from the staff side.
+triage it from the staff side. Password resets and email changes work from the profile page
+and login screens once platform SMTP is configured (Settings → Email notifications).
 
 ## Stack
 

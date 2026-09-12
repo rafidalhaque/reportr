@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     # Invites
     invite_ttl_days: int = 14
 
+    # Public-facing URL used in account emails (password reset, email change)
+    frontend_url: str = "http://localhost:3000"
+
     # Public API abuse protection
     trust_proxy_headers: bool = False  # enable behind nginx (docker-compose) for real client IPs
     rate_limit_reports: str = "10/hour"  # per client IP, per program
