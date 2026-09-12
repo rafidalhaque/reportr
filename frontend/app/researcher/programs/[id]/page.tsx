@@ -7,12 +7,14 @@ import { ArrowLeft, Loader2, Send } from "lucide-react";
 import { apiGet, apiPost, errMessage } from "@/lib/api";
 import { SEVERITIES } from "@/lib/constants";
 import { titleCase } from "@/lib/utils";
+import cweList from "@/lib/cwe_list.json";
 import type { ProgramDetail, Report, ScopeEntry, UploadOut } from "@/lib/types";
 import { useMe } from "@/components/auth";
 import { AppShell, FullPageLoader } from "@/components/shell";
 import { ErrorAlert, InfoAlert } from "@/components/alerts";
 import { ProgramStatusBadge } from "@/components/badges";
 import { AttachmentsPicker } from "@/components/attachments";
+import { CvssCalculator } from "@/components/cvss-calculator";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,6 +38,7 @@ export default function ResearcherProgramPage() {
   const [severity, setSeverity] = useState<string>("medium");
   const [affectedAsset, setAffectedAsset] = useState("");
   const [cvss, setCvss] = useState("");
+  const [cweId, setCweId] = useState("");
   const [description, setDescription] = useState("");
   const [reproSteps, setReproSteps] = useState("");
   const [attachments, setAttachments] = useState<UploadOut[]>([]);
@@ -74,6 +77,7 @@ export default function ResearcherProgramPage() {
         title,
         severity,
         cvss: cvss || undefined,
+        cwe_id: cweId || undefined,
         affected_asset: affectedAsset || undefined,
         description,
         repro_steps: reproSteps,
@@ -232,6 +236,23 @@ export default function ResearcherProgramPage() {
                     placeholder="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
                     className="font-mono text-xs"
                   />
+                  <CvssCalculator value={cvss} onChange={setCvss} onApplySeverity={setSeverity} />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="report-cwe">Type of bug</Label>
+                  <Select
+                    id="report-cwe"
+                    value={cweId}
+                    onChange={(e) => setCweId(e.target.value)}
+                  >
+                    <option value="">Not sure / other</option>
+                    {cweList.map((cwe) => (
+                      <option key={cwe.id} value={cwe.id}>
+                        {cwe.id} — {cwe.name}
+                      </option>
+                    ))}
+                  </Select>
                 </div>
 
                 <div className="space-y-1.5">

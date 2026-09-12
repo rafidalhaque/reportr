@@ -149,6 +149,8 @@ class Report(Base):
     description: Mapped[str] = mapped_column(Text, default="")
     severity: Mapped[str] = mapped_column(String(16), default="medium")
     cvss: Mapped[str | None] = mapped_column(String(64), nullable=True)  # vector string, reference only
+    cwe_id: Mapped[str | None] = mapped_column(String(16), nullable=True)  # bug type, e.g. CWE-79
+    cwe_name: Mapped[str | None] = mapped_column(String(200), nullable=True)  # resolved from the CWE catalog
     repro_steps: Mapped[str] = mapped_column(Text, default="")
     affected_asset: Mapped[str | None] = mapped_column(String(200), nullable=True)
     attachments: Mapped[list] = mapped_column(JSON, default=list)  # JSON list of {key, name}

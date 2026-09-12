@@ -164,7 +164,7 @@ No cross-researcher visibility (can't see other researchers' reports/comments on
 
 ## 6. Open Decisions
 
-- **CVSS handling**: auto-calculate severity from CVSS vector input, or staff sets severity manually with CVSS stored as a reference field only? Affects report-submission form complexity. **Unresolved.**
+- **CVSS handling**: resolved — staff/submitters set severity manually, with a client-side CVSS v3.1 calculator (vector builder + base score + one-click severity suggestion) in both submission forms. CVSS stays a reference field; the score never overrides the chosen severity automatically.
 - **License**: AGPLv3 leaning (prevents unmodified SaaS-wrapping without contributing back) — final call pending.
 - **Name/positioning**: working name is **Reportr** (repo: github.com/rafidalhaque/reportr); final name TBD. Positioning recommendation unchanged: frame around "self-hosted HackerOne/Bugcrowd alternative" for discoverability (GitHub search, HN launch).
 

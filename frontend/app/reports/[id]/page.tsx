@@ -416,6 +416,14 @@ export default function ReportDetailPage() {
                   </div>
                   <div>
                     <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Type of bug (CWE)
+                    </dt>
+                    <dd className="mt-0.5 text-slate-800">
+                      {report.cwe_id ? `${report.cwe_id} — ${report.cwe_name}` : "—"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
                       Created
                     </dt>
                     <dd className="mt-0.5 text-slate-800">{fmtDateTime(report.created_at)}</dd>

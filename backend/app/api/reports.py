@@ -17,6 +17,7 @@ from app.constants import (
 )
 from app.core.deps import get_actor
 from app.core.permissions import has_global_role, has_program_perm
+from app.cwe import resolve_cwe
 from app.database import get_session
 from app.models import Program, ProgramMembership, ProgramRole, Report, ReportComment, Researcher, StaffUser
 from app.schemas import (
@@ -77,6 +78,8 @@ async def serialize_report(report: Report, presign: bool = False) -> ReportRead:
         description=report.description,
         severity=report.severity,
         cvss=report.cvss,
+        cwe_id=report.cwe_id,
+        cwe_name=report.cwe_name,
         repro_steps=report.repro_steps,
         affected_asset=report.affected_asset,
         attachments=attachments,
@@ -172,6 +175,11 @@ async def create_report(
     if program.status != "active":
         raise HTTPException(400, "This program is not accepting reports right now")
 
+    try:
+        cwe = resolve_cwe(payload.cwe_id)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
+
     report = Report(
         org_id=program.org_id,
         program_id=program.id,
@@ -180,6 +188,8 @@ async def create_report(
         description=payload.description,
         severity=payload.severity,
         cvss=payload.cvss,
+        cwe_id=cwe[0] if cwe else None,
+        cwe_name=cwe[1] if cwe else None,
         repro_steps=payload.repro_steps,
         affected_asset=payload.affected_asset,
         attachments=[a.model_dump() for a in payload.attachments],

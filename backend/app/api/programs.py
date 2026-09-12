@@ -78,6 +78,7 @@ async def create_program(
         scope_markdown=payload.scope_markdown,
         status=payload.status,
         visibility=payload.visibility,
+        public_reporting=payload.public_reporting,
         created_by_id=user.id,
     )
     session.add(program)

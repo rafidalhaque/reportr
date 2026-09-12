@@ -89,6 +89,7 @@ class ProgramCreate(BaseModel):
     scope_markdown: str = ""
     status: Literal["draft", "active", "paused", "closed"] = "draft"
     visibility: Literal["public", "private"] = "private"
+    public_reporting: bool = False
 
 
 class ProgramUpdate(BaseModel):
@@ -218,7 +219,8 @@ class ReportCreate(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     description: str = ""
     severity: Severity = "medium"
-    cvss: str | None = None
+    cvss: str | None = Field(default=None, max_length=64)
+    cwe_id: str | None = Field(default=None, max_length=16)  # must exist in the CWE catalog
     repro_steps: str = ""
     affected_asset: str | None = None
     attachments: list[AttachmentIn] = []
@@ -272,6 +274,8 @@ class ReportRead(BaseModel):
     description: str
     severity: str
     cvss: str | None
+    cwe_id: str | None
+    cwe_name: str | None
     repro_steps: str
     affected_asset: str | None
     attachments: list[AttachmentOut]
@@ -304,13 +308,17 @@ class PublicReportFormInfo(BaseModel):
     program_name: str
     program_slug: str
     description: str
+    # Scope details are only exposed when the program itself is public (todo #15)
+    scope_markdown: str = ""
+    scope_entries: list[ScopeEntryRead] = []
 
 
 class PublicReportCreate(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     description: str = ""
     severity: Severity = "medium"
-    cvss: str | None = None
+    cvss: str | None = Field(default=None, max_length=64)
+    cwe_id: str | None = Field(default=None, max_length=16)  # must exist in the CWE catalog
     repro_steps: str = ""
     affected_asset: str | None = None
     email: EmailStr | None = None  # optional contact; omit to submit anonymously

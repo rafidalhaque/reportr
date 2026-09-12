@@ -46,9 +46,17 @@ Pre-check for the public report form: is it available, and what should the page 
   "reason": null,
   "program_name": "Demo Program",
   "program_slug": "demo-program",
-  "description": "Example program…"
+  "description": "Example program…",
+  "scope_markdown": "## Scope
+…",
+  "scope_entries": [
+    { "id": "…", "target": "*.demo.example.com", "description": "", "in_scope": true, "severity_guide": "up to critical", "created_at": "…" }
+  ]
 }
 ```
+
+`scope_markdown` / `scope_entries` are populated only when the program's visibility is
+`public`; private programs keep their scope hidden even when their report link is shared.
 
 `available` is `false` (with a human-readable `reason`) when public reporting is disabled
 for the program or the program isn't active. `404` if the slug doesn't exist.
@@ -69,6 +77,7 @@ Request:
   "repro_steps": "1. Open /search\n2. Enter <script> payload\n3. Observe execution",
   "affected_asset": "https://demo.example.com/search",
   "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N",
+  "cwe_id": "CWE-79",
   "email": "reporter@example.com"
 }
 ```
@@ -80,6 +89,7 @@ Request:
 | `description`, `repro_steps` | no | free text |
 | `affected_asset` | no | URL or asset identifier |
 | `cvss` | no | vector string, stored as reference (severity is not auto-derived) |
+| `cwe_id` | no | bug type from the bundled CWE catalog (e.g. `CWE-79`); unknown ids are rejected with 422 |
 | `email` | no | omit for a fully anonymous submission |
 
 Response `201`:

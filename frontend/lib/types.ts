@@ -128,6 +128,8 @@ export interface Report {
   description: string;
   severity: Severity | string;
   cvss: string | null;
+  cwe_id: string | null;
+  cwe_name: string | null;
   repro_steps: string;
   affected_asset: string | null;
   attachments: Attachment[];
@@ -168,6 +170,8 @@ export interface PublicReportFormInfo {
   program_name: string;
   program_slug: string;
   description: string;
+  scope_markdown: string;
+  scope_entries: ScopeEntry[];
 }
 
 export interface PublicReportSubmitResult {

@@ -1,4 +1,5 @@
 """End-to-end API tests over an in-memory SQLite database."""
+import json
 
 
 async def test_health(client):
@@ -489,3 +490,75 @@ async def test_profile_get_and_update(admin_client, client, make_client):
     patched = await researcher.patch("/api/me", json={"name": "Prof X", "portfolio_url": "https://prof.example.com"})
     assert patched.json()["name"] == "Prof X"
     assert patched.json()["portfolio_url"] == "https://prof.example.com"
+
+
+async def test_cwe_on_reports(admin_client, client, make_client):
+    import pathlib
+
+    backend_list = json.loads(
+        (pathlib.Path(__file__).parents[1] / "app" / "data" / "cwe_list.json").read_text(encoding="utf-8")
+    )
+    frontend_list = json.loads(
+        (pathlib.Path(__file__).parents[2] / "frontend" / "lib" / "cwe_list.json").read_text(encoding="utf-8")
+    )
+    assert backend_list == frontend_list  # the two catalogs must stay in sync
+
+    program_id = client.ids["program_id"]
+    invite = (await admin_client.post(f"/api/programs/{program_id}/invites", json={"email": "cwetest@test.com"})).json()
+    researcher = await make_client()
+    await researcher.post("/api/auth/researchers/register", json={"token": invite["token"], "password": "res12345"})
+
+    resp = await researcher.post(
+        "/api/reports",
+        json={"program_id": program_id, "title": "xss finding", "cwe_id": "cwe-79"},
+    )
+    assert resp.status_code == 201, resp.text
+    assert resp.json()["cwe_id"] == "CWE-79"
+    assert "Cross-site" in (resp.json()["cwe_name"] or "")
+
+    bad = await researcher.post(
+        "/api/reports", json={"program_id": program_id, "title": "nope", "cwe_id": "CWE-99999"}
+    )
+    assert bad.status_code == 422
+
+
+async def test_public_report_cwe_and_form_scope(admin_client, client):
+    program_id = client.ids["program_id"]
+    await admin_client.patch(
+        f"/api/programs/{program_id}",
+        json={"public_reporting": True, "scope_markdown": "## Public scope notes"},
+    )
+    entry = await admin_client.post(
+        f"/api/programs/{program_id}/scope", json={"target": "*.example.com", "in_scope": True}
+    )
+    assert entry.status_code == 201
+    slug = (await admin_client.get(f"/api/programs/{program_id}")).json()["slug"]
+
+    info = (await client.get(f"/api/public/programs/{slug}/report-form")).json()
+    assert info["available"] is True
+    assert "Public scope notes" in info["scope_markdown"]
+    assert any(e["target"] == "*.example.com" for e in info["scope_entries"])
+
+    submit = await client.post(
+        f"/api/public/programs/{slug}/reports",
+        json={"title": "public cwe bug", "cwe_id": "CWE-89"},
+    )
+    assert submit.status_code == 201, submit.text
+    staff_view = (await admin_client.get(f"/api/reports/{submit.json()['id']}")).json()
+    assert staff_view["cwe_id"] == "CWE-89"
+    assert "SQL" in (staff_view["cwe_name"] or "")
+
+    # private program with public reporting: form works but scope stays hidden
+    private = (
+        await admin_client.post(
+            "/api/programs",
+            json={"name": "Private Scope Prog", "visibility": "private", "status": "active", "public_reporting": True},
+        )
+    ).json()
+    await admin_client.post(
+        f"/api/programs/{private['id']}/scope", json={"target": "internal.example.com"}
+    )
+    private_info = (await client.get(f"/api/public/programs/{private['slug']}/report-form")).json()
+    assert private_info["available"] is True
+    assert private_info["scope_markdown"] == ""
+    assert private_info["scope_entries"] == []

@@ -17,19 +17,21 @@ duplicate (14/15) — nothing was dropped.
   and correct client-IP handling behind the proxy (`TRUST_PROXY_HEADERS`).
   Decision: per-program API keys for partners are **deferred** — revisit only if a partner
   needs programmatic submission with guaranteed identity/quota.
-- [ ] **15. Show details & scope on the public report form when the program is public** —
-  the form pre-check endpoint (`GET /api/public/programs/{slug}/report-form`) already returns
-  name/description; extend it to include scope (markdown today, structured entries after #4)
-  and render it on `/report/[slug]` before the form.
-- [ ] **6. CVE / CVSS calculator in the submission form** — client-side CVSS v3.1 vector
-  builder (AV/AC/PR/UI/S/C/I/A picker → vector string + base score), shown in the public form
-  and researcher submission form; optionally auto-suggest severity from the score (resolves
-  the open CVSS question in spec §6).
-- [ ] **16. "Type of bug" dropdown (CWE) in the submission form** — bug-type selector backed
-  by the MITRE CWE list (https://cwe.mitre.org/data/index.html). Store a `cwe_id`/`cwe_name`
-  on the report (small migration + API fields), render in the public form and researcher
-  submission form, and show it in staff views next to severity. Bundle the CWE list as a
-  static JSON snapshot (ship in repo, refreshable) rather than hitting MITRE at runtime.
+- [x] **15. Show details & scope on the public report form when the program is public** —
+  DONE: `GET /api/public/programs/{slug}/report-form` returns `scope_markdown` and the
+  structured `scope_entries` when the program's visibility is `public` (hidden for private
+  programs, even when their report link is shared); `/report/[slug]` renders both above the
+  submission form.
+- [x] **6. CVE / CVSS calculator in the submission form** — DONE: collapsible CVSS v3.1
+  calculator (`components/cvss-calculator.tsx`) in both submission forms — eight-metric
+  picker, canonical vector string, spec-exact base score (incl. the 1.08 changed-scope
+  multiplier and v3.1 roundup, verified against reference vectors), severity suggestion
+  applied with one click. CWE dropdown shipped alongside (#16).
+- [x] **16. "Type of bug" dropdown (CWE) in the submission form** — DONE: CWE catalog
+  snapshot (`backend/app/data/cwe_list.json`, mirrored at `frontend/lib/cwe_list.json`, sync
+  enforced by a test) feeds a dropdown in both submission forms; `reports.cwe_id`/`cwe_name`
+  (migration 0005) are validated server-side (unknown ids → 422) and shown on the staff
+  report detail. Refresh the JSON to update the catalog.
 
 ## Email & notifications
 
