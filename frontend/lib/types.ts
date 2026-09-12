@@ -144,6 +144,7 @@ export interface Comment {
   internal_only: boolean;
   author_kind: "staff" | "researcher";
   author_name: string;
+  attachments: Attachment[];
   created_at: string;
 }
 
@@ -177,4 +178,23 @@ export interface PublicReportSubmitResult {
 
 export interface PlatformSettings {
   researcher_applications_enabled: boolean;
+}
+
+export interface ProfileMembership {
+  program_id: string;
+  program_name: string;
+  program_slug: string;
+  role: string; // staff program role, or "member" for researchers
+  joined_at: string;
+}
+
+export interface Profile {
+  kind: "staff" | "researcher";
+  id: string;
+  email: string;
+  name: string;
+  global_role?: string | null;
+  researcher_status?: string | null;
+  portfolio_url?: string | null;
+  memberships: ProfileMembership[];
 }

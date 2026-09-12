@@ -9,7 +9,7 @@ import { REPORT_EDITABLE_STATUSES, SEVERITIES } from "@/lib/constants";
 import { fmtDateTime, titleCase } from "@/lib/utils";
 import type { Comment, Report, UploadOut } from "@/lib/types";
 import { useMe } from "@/components/auth";
-import { AppHeader, FullPageLoader } from "@/components/shell";
+import { AppShell, FullPageLoader } from "@/components/shell";
 import { ErrorAlert, InfoAlert, SuccessAlert } from "@/components/alerts";
 import { ReportStatusBadge, SeverityBadge } from "@/components/badges";
 import { AttachmentsPicker } from "@/components/attachments";
@@ -46,6 +46,7 @@ export default function ResearcherReportPage() {
 
   // Comment composer
   const [body, setBody] = useState("");
+  const [commentAttachments, setCommentAttachments] = useState<UploadOut[]>([]);
   const [posting, setPosting] = useState(false);
   const [commentError, setCommentError] = useState("");
 
@@ -80,12 +81,11 @@ export default function ResearcherReportPage() {
   if (meLoading || !me) return <FullPageLoader />;
   if (error && !report) {
     return (
-      <div className="min-h-screen">
-        <AppHeader me={me} />
-        <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+      <AppShell me={me}>
+        <main>
           <ErrorAlert>{error}</ErrorAlert>
         </main>
-      </div>
+      </AppShell>
     );
   }
   if (!report) return <FullPageLoader label="Loading report…" />;
@@ -122,9 +122,13 @@ export default function ResearcherReportPage() {
     setPosting(true);
     setCommentError("");
     try {
-      const created = await apiPost<Comment>(`/reports/${reportId}/comments`, { body });
+      const created = await apiPost<Comment>(`/reports/${reportId}/comments`, {
+        body,
+        attachments: commentAttachments.map(({ key, name }) => ({ key, name })),
+      });
       setComments((prev) => [...(prev ?? []), created]);
       setBody("");
+      setCommentAttachments([]);
     } catch (err) {
       setCommentError(errMessage(err));
     } finally {
@@ -133,9 +137,8 @@ export default function ResearcherReportPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      <AppHeader me={me} />
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+    <AppShell me={me}>
+      <main>
         <Link
           href="/researcher"
           className="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700"
@@ -391,25 +394,60 @@ export default function ResearcherReportPage() {
 
             <ul className="space-y-3">
               {(comments ?? []).map((comment) => (
-                <li key={comment.id} className="rounded-lg border border-slate-200 bg-white p-3">
-                  <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                    <span className="font-medium text-slate-700">{comment.author_name}</span>
+                <li
+                  key={comment.id}
+                  className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
+                >
+                  <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <span className="font-medium text-slate-700 dark:text-slate-300">{comment.author_name}</span>
                     <Badge color={comment.author_kind === "staff" ? "indigo" : "slate"}>
                       {titleCase(comment.author_kind)}
                     </Badge>
                     <span>{fmtDateTime(comment.created_at)}</span>
                   </div>
-                  <p className="whitespace-pre-wrap text-sm text-slate-700">{comment.body}</p>
+                  <p className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">{comment.body}</p>
+                  {comment.attachments.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {comment.attachments.map((attachment) =>
+                        attachment.url ? (
+                          <a
+                            key={attachment.key}
+                            href={attachment.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-indigo-600 hover:underline dark:border-slate-700 dark:bg-slate-900 dark:text-indigo-300"
+                          >
+                            <Paperclip className="h-3 w-3" />
+                            {attachment.name}
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        ) : (
+                          <span
+                            key={attachment.key}
+                            className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+                          >
+                            <Paperclip className="h-3 w-3" />
+                            {attachment.name}
+                          </span>
+                        )
+                      )}
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
 
-            <form onSubmit={onCommentSubmit} className="space-y-2 border-t border-slate-100 pt-4">
+            <form onSubmit={onCommentSubmit} className="space-y-2 border-t border-slate-100 pt-4 dark:border-slate-800">
               <Textarea
                 rows={3}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="Add a comment…"
+              />
+              <AttachmentsPicker
+                value={commentAttachments}
+                onChange={setCommentAttachments}
+                disabled={posting}
               />
               <div className="flex justify-end">
                 <Button type="submit" size="sm" disabled={posting || !body.trim()}>
@@ -421,6 +459,6 @@ export default function ResearcherReportPage() {
           </CardContent>
         </Card>
       </main>
-    </div>
+    </AppShell>
   );
 }

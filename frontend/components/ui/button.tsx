@@ -5,14 +5,14 @@ export type ButtonVariant = "default" | "secondary" | "outline" | "ghost" | "des
 export type ButtonSize = "default" | "sm" | "lg" | "icon";
 
 const base =
-  "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
+  "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:ring-offset-slate-900 disabled:pointer-events-none disabled:opacity-50";
 
 const variants: Record<ButtonVariant, string> = {
   default: "bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 focus-visible:ring-indigo-600",
-  secondary: "bg-slate-100 text-slate-900 hover:bg-slate-200 focus-visible:ring-slate-400",
+  secondary: "bg-slate-100 text-slate-900 hover:bg-slate-200 focus-visible:ring-slate-400 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700",
   outline:
-    "border border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-100 focus-visible:ring-slate-400",
-  ghost: "text-slate-700 hover:bg-slate-100 focus-visible:ring-slate-400",
+    "border border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-100 focus-visible:ring-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800",
+  ghost: "text-slate-700 hover:bg-slate-100 focus-visible:ring-slate-400 dark:text-slate-300 dark:hover:bg-slate-800",
   destructive: "bg-red-600 text-white shadow-sm hover:bg-red-700 focus-visible:ring-red-600",
   link: "text-indigo-600 underline-offset-4 hover:underline",
 };

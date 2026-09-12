@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react";
 import { apiGet, apiPatch, errMessage } from "@/lib/api";
 import type { Me, PlatformSettings } from "@/lib/types";
 import { useMe } from "@/components/auth";
-import { AppHeader, FullPageLoader } from "@/components/shell";
+import { AppShell, FullPageLoader } from "@/components/shell";
 import { ErrorAlert, InfoAlert, SuccessAlert } from "@/components/alerts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,12 +19,11 @@ export default function PlatformSettingsPage() {
   if (meLoading) return <FullPageLoader />;
   if (!me) return <FullPageLoader label="Redirecting…" />;
   return (
-    <div className="min-h-screen">
-      <AppHeader me={me} />
-      <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+    <AppShell me={me}>
+      <main>
         <PlatformSettingsPanel me={me} />
       </main>
-    </div>
+    </AppShell>
   );
 }
 

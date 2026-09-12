@@ -7,11 +7,12 @@ import { ArrowLeft, ExternalLink, Loader2, Paperclip } from "lucide-react";
 import { apiGet, apiPatch, apiPost, errMessage } from "@/lib/api";
 import { REPORT_STATUSES } from "@/lib/constants";
 import { fmtDateTime, titleCase } from "@/lib/utils";
-import type { Comment, Report, StaffMember } from "@/lib/types";
+import type { Comment, Report, StaffMember, UploadOut } from "@/lib/types";
 import { useMe } from "@/components/auth";
-import { AppHeader, FullPageLoader } from "@/components/shell";
+import { AppShell, FullPageLoader } from "@/components/shell";
 import { ErrorAlert, SuccessAlert } from "@/components/alerts";
 import { ReportStatusBadge, SeverityBadge } from "@/components/badges";
+import { AttachmentsPicker } from "@/components/attachments";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +41,7 @@ export default function ReportDetailPage() {
   // Comment composer
   const [body, setBody] = useState("");
   const [internalOnly, setInternalOnly] = useState(false);
+  const [commentAttachments, setCommentAttachments] = useState<UploadOut[]>([]);
   const [posting, setPosting] = useState(false);
   const [commentError, setCommentError] = useState("");
 
@@ -76,12 +78,11 @@ export default function ReportDetailPage() {
   if (meLoading || !me) return <FullPageLoader />;
   if (error && !report) {
     return (
-      <div className="min-h-screen">
-        <AppHeader me={me} />
-        <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+      <AppShell me={me}>
+        <main>
           <ErrorAlert>{error}</ErrorAlert>
         </main>
-      </div>
+      </AppShell>
     );
   }
   if (!report) return <FullPageLoader label="Loading report…" />;
@@ -120,10 +121,12 @@ export default function ReportDetailPage() {
       const created = await apiPost<Comment>(`/reports/${reportId}/comments`, {
         body,
         internal_only: internalOnly,
+        attachments: commentAttachments.map(({ key, name }) => ({ key, name })),
       });
       setComments((prev) => [...(prev ?? []), created]);
       setBody("");
       setInternalOnly(false);
+      setCommentAttachments([]);
     } catch (err) {
       setCommentError(errMessage(err));
     } finally {
@@ -136,9 +139,8 @@ export default function ReportDetailPage() {
     (report && (report.assigned_staff_id ?? "") !== assignee);
 
   return (
-    <div className="min-h-screen">
-      <AppHeader me={me} />
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+    <AppShell me={me}>
+      <main>
         <Link
           href={`/programs/${report.program_id}`}
           className="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700"
@@ -247,29 +249,61 @@ export default function ReportDetailPage() {
                       key={comment.id}
                       className={`rounded-lg border p-3 ${
                         comment.internal_only
-                          ? "border-amber-200 bg-amber-50"
-                          : "border-slate-200 bg-white"
+                          ? "border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30"
+                          : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
                       }`}
                     >
-                      <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                        <span className="font-medium text-slate-700">{comment.author_name}</span>
+                      <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <span className="font-medium text-slate-700 dark:text-slate-300">{comment.author_name}</span>
                         <Badge color={comment.author_kind === "staff" ? "indigo" : "slate"}>
                           {titleCase(comment.author_kind)}
                         </Badge>
                         {comment.internal_only && <Badge color="amber">Internal</Badge>}
                         <span>{fmtDateTime(comment.created_at)}</span>
                       </div>
-                      <p className="whitespace-pre-wrap text-sm text-slate-700">{comment.body}</p>
+                      <p className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">{comment.body}</p>
+                      {comment.attachments.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {comment.attachments.map((attachment) =>
+                            attachment.url ? (
+                              <a
+                                key={attachment.key}
+                                href={attachment.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-indigo-600 hover:underline dark:border-slate-700 dark:bg-slate-900 dark:text-indigo-300"
+                              >
+                                <Paperclip className="h-3 w-3" />
+                                {attachment.name}
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            ) : (
+                              <span
+                                key={attachment.key}
+                                className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+                              >
+                                <Paperclip className="h-3 w-3" />
+                                {attachment.name}
+                              </span>
+                            )
+                          )}
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
 
-                <form onSubmit={onCommentSubmit} className="space-y-2 border-t border-slate-100 pt-4">
+                <form onSubmit={onCommentSubmit} className="space-y-2 border-t border-slate-100 pt-4 dark:border-slate-800">
                   <Textarea
                     rows={3}
                     value={body}
                     onChange={(e) => setBody(e.target.value)}
                     placeholder="Write a comment…"
+                  />
+                  <AttachmentsPicker
+                    value={commentAttachments}
+                    onChange={setCommentAttachments}
+                    disabled={posting}
                   />
                   <div className="flex items-center justify-between">
                     <label className="flex items-center gap-2 text-sm text-slate-600">
@@ -398,6 +432,6 @@ export default function ReportDetailPage() {
           </div>
         </div>
       </main>
-    </div>
+    </AppShell>
   );
 }

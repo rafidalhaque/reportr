@@ -1,3 +1,22 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Dark-theme base (todo #11): the .dark class on <html> is set by the inline
+   script in layout.tsx before paint. Headings get a global rule so page files
+   don't each need dark: text variants; components carry their own. */
+.dark h1,
+.dark h2 {
+  @apply text-slate-100;
+}
+.dark h3,
+.dark h4 {
+  @apply text-slate-200;
+}
+
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}

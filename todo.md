@@ -63,16 +63,23 @@ duplicate (14/15) — nothing was dropped.
 
 ## Platform & UX
 
-- [ ] **11. Night / day theme** — dark + light theme (Tailwind `darkMode` class strategy),
-  toggle in the header, persisted per browser; design tokens for badges/cards so severity
-  and status colors work in both themes.
-- [ ] **12. Sidebar instead of top nav** — replace the top header nav with a collapsible
-  sidebar (role-aware: Dashboard/Staff/Settings for staff, workspace for researchers).
-- [ ] **13. Own profile** — profile page for every account: view/edit own name, portfolio
-  (researchers), see role/memberships; entry point in the sidebar from #12.
-- [ ] **14. Attachments in comments** — allow attaching files when commenting (staff and
-  researcher sides; reuses the existing upload endpoint + attachment picker). Anonymous
-  public-form reporters stay without attachments.
+- [x] **11. Night / day theme** — DONE: `darkMode: "class"` with a pre-paint init script
+  (localStorage `bb-theme`, falls back to system preference), toggle in the sidebar and
+  public header; dark variants across all UI primitives, badges, alerts, markdown, and the
+  shell; headings themed globally in `globals.css`.
+- [x] **12. Sidebar instead of top nav** — DONE: `AppShell` replaces the top header on all
+  authenticated pages — fixed role-aware sidebar on desktop (Dashboard/Profile, Staff +
+  Platform settings for super admins; workspace for researchers), slide-over drawer behind
+  a top bar on mobile, with theme toggle and sign-out in the sidebar footer.
+- [x] **13. Own profile** — DONE: `/profile` for both account kinds — edit display name
+  (and portfolio URL for researchers) via `GET/PATCH /api/me[/profile]`, plus the program
+  list (staff program roles, researcher memberships). Entry point in the sidebar.
+  Email/password changes remain with #14b.
+- [x] **14. Attachments in comments** — DONE: comments accept up to 10 uploaded files
+  (JSON `attachments` column, migration 0004); both composers have the attachment picker
+  and comment attachments render as download links (presigned when storage is configured).
+  Internal-only comments keep their attachments staff-side automatically. Anonymous
+  public-form reporters stay without attachments, as intended.
 
 ## Accounts
 

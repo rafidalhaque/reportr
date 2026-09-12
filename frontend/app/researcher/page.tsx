@@ -7,7 +7,7 @@ import { apiGet, errMessage } from "@/lib/api";
 import { fmtDate } from "@/lib/utils";
 import type { Program, Report } from "@/lib/types";
 import { useMe } from "@/components/auth";
-import { AppHeader, FullPageLoader } from "@/components/shell";
+import { AppShell, FullPageLoader } from "@/components/shell";
 import { ErrorAlert } from "@/components/alerts";
 import { ProgramStatusBadge, ReportStatusBadge, SeverityBadge } from "@/components/badges";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,9 +40,8 @@ export default function ResearcherHomePage() {
   if (loading || !me) return <FullPageLoader />;
 
   return (
-    <div className="min-h-screen">
-      <AppHeader me={me} />
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <AppShell me={me}>
+      <main>
         <h1 className="text-2xl font-semibold tracking-tight">
           Welcome back{me.name ? `, ${me.name}` : ""}
         </h1>
@@ -148,6 +147,6 @@ export default function ResearcherHomePage() {
           )}
         </section>
       </main>
-    </div>
+    </AppShell>
   );
 }

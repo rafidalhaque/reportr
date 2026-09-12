@@ -8,7 +8,7 @@ import { GLOBAL_ROLES } from "@/lib/constants";
 import { titleCase } from "@/lib/utils";
 import type { GlobalRole, StaffMember } from "@/lib/types";
 import { useMe } from "@/components/auth";
-import { AppHeader, FullPageLoader } from "@/components/shell";
+import { AppShell, FullPageLoader } from "@/components/shell";
 import { ErrorAlert, SuccessAlert } from "@/components/alerts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,9 +55,8 @@ export default function StaffPage() {
 
   if (!isSuperAdmin) {
     return (
-      <div className="min-h-screen">
-        <AppHeader me={me} />
-        <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+      <AppShell me={me}>
+        <main>
           <Card>
             <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
               <ShieldX className="h-10 w-10 text-red-400" />
@@ -75,7 +74,7 @@ export default function StaffPage() {
             </CardContent>
           </Card>
         </main>
-      </div>
+      </AppShell>
     );
   }
 
@@ -128,9 +127,8 @@ export default function StaffPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      <AppHeader me={me} />
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+    <AppShell me={me}>
+      <main>
         <h1 className="text-2xl font-semibold tracking-tight">Staff</h1>
         <p className="mb-6 text-sm text-slate-500">
           Manage staff accounts and their global roles.
@@ -273,6 +271,6 @@ export default function StaffPage() {
           </div>
         )}
       </main>
-    </div>
+    </AppShell>
   );
 }

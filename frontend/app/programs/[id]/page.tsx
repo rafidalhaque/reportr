@@ -35,7 +35,7 @@ import type {
   StaffMember,
 } from "@/lib/types";
 import { useMe } from "@/components/auth";
-import { AppHeader, FullPageLoader } from "@/components/shell";
+import { AppShell, FullPageLoader } from "@/components/shell";
 import { ErrorAlert, InfoAlert, SuccessAlert } from "@/components/alerts";
 import {
   InviteStatusBadge,
@@ -97,9 +97,8 @@ export default function ProgramPage() {
   ];
 
   return (
-    <div className="min-h-screen">
-      <AppHeader me={me} />
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <AppShell me={me}>
+      <main>
         <Link
           href="/dashboard"
           className="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700"
@@ -153,7 +152,7 @@ export default function ProgramPage() {
           </>
         )}
       </main>
-    </div>
+    </AppShell>
   );
 }
 

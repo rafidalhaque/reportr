@@ -9,7 +9,7 @@ import { PROGRAM_STATUSES, PROGRAM_VISIBILITIES } from "@/lib/constants";
 import { fmtDate } from "@/lib/utils";
 import type { Program } from "@/lib/types";
 import { useMe } from "@/components/auth";
-import { AppHeader, FullPageLoader } from "@/components/shell";
+import { AppShell, FullPageLoader } from "@/components/shell";
 import { ErrorAlert } from "@/components/alerts";
 import { ProgramStatusBadge, VisibilityBadge } from "@/components/badges";
 import { Button } from "@/components/ui/button";
@@ -158,9 +158,8 @@ export default function DashboardPage() {
   const isOrgAdmin = me.global_role === "super_admin" || me.global_role === "org_admin";
 
   return (
-    <div className="min-h-screen">
-      <AppHeader me={me} />
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <AppShell me={me}>
+      <main>
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Programs</h1>
@@ -234,6 +233,6 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
-    </div>
+    </AppShell>
   );
 }

@@ -79,7 +79,7 @@ export function AttachmentsPicker({
               </span>
               <button
                 type="button"
-                className="rounded p-0.5 text-slate-400 hover:bg-slate-200 hover:text-slate-600"
+                className="rounded p-0.5 text-slate-400 hover:bg-slate-200 hover:text-slate-600 dark:text-slate-300"
                 aria-label={`Remove ${attachment.name}`}
                 disabled={disabled}
                 onClick={() => onChange(value.filter((_, i) => i !== index))}
