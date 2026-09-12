@@ -10,10 +10,13 @@ duplicate (14/15) — nothing was dropped.
   (e.g. `487C893F`) and sees report status + non-internal comments, read-only. Reference is
   derived from the report id (`id.hex[:8]`); unauthenticated lookup treats the code as the
   secret. Builds on: public report form + comments (`internal_only` already stays staff-side).
-- [ ] **5. Public program API to receive submissions** — largely DONE: unauthenticated
+- [x] **5. Public program API to receive submissions** — DONE: unauthenticated
   `POST /api/public/programs/{slug}/reports` accepts anonymous/email-only submissions and
-  returns a reference number. Remaining: document it as a stable public API, add rate
-  limiting, and decide whether an optional per-program API key is needed for partners.
+  returns a reference number; documented as a stable contract in `docs/public-api.md`,
+  with per-IP fixed-window rate limits (`RATE_LIMIT_REPORTS`, `RATE_LIMIT_APPLICATIONS`)
+  and correct client-IP handling behind the proxy (`TRUST_PROXY_HEADERS`).
+  Decision: per-program API keys for partners are **deferred** — revisit only if a partner
+  needs programmatic submission with guaranteed identity/quota.
 - [ ] **15. Show details & scope on the public report form when the program is public** —
   the form pre-check endpoint (`GET /api/public/programs/{slug}/report-form`) already returns
   name/description; extend it to include scope (markdown today, structured entries after #4)

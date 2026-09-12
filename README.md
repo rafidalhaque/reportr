@@ -52,6 +52,13 @@ triage it from the staff side.
 
 Both converge on the same invite → membership → submission pipeline.
 
+## Public submission API
+
+Anyone can submit a report to a program with public reporting enabled — anonymously or with
+just a contact email — and receive a reference number for correspondence. This endpoint is
+documented as a stable external contract in [docs/public-api.md](docs/public-api.md),
+including rate limits and the error contract.
+
 ## RBAC (summary)
 
 Global roles: `super_admin`, `org_admin`, `staff` (default, no access without a program role),
