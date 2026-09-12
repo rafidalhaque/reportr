@@ -58,6 +58,21 @@ class Program(Base):
     )
 
 
+class ScopeEntry(Base):
+    """Structured scope item for a program (todo #4) — complements scope_markdown."""
+
+    __tablename__ = "program_scope"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    org_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("orgs.id"), nullable=True)
+    program_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("programs.id"), nullable=False, index=True)
+    target: Mapped[str] = mapped_column(String(200))
+    description: Mapped[str] = mapped_column(Text, default="")
+    in_scope: Mapped[bool] = mapped_column(Boolean, default=True)
+    severity_guide: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class Application(Base):
     __tablename__ = "applications"
 

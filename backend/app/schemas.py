@@ -104,6 +104,36 @@ class ProgramStats(BaseModel):
     members: int
 
 
+# --- Program scope (structured, todo #4) ----------------------------------
+class ScopeEntryCreate(BaseModel):
+    target: str = Field(min_length=1, max_length=200)
+    description: str = ""
+    in_scope: bool = True
+    severity_guide: str | None = Field(default=None, max_length=32)
+
+
+class ScopeEntryUpdate(BaseModel):
+    target: str | None = Field(default=None, max_length=200)
+    description: str | None = None
+    in_scope: bool | None = None
+    severity_guide: str | None = Field(default=None, max_length=32)
+
+
+class ScopeEntryRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    target: str
+    description: str
+    in_scope: bool
+    severity_guide: str | None
+    created_at: datetime
+
+
+class ScopeImportResult(BaseModel):
+    created: int
+    skipped: int
+
+
 # --- Invites -------------------------------------------------------------
 class InviteCreate(BaseModel):
     email: EmailStr

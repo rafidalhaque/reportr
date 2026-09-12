@@ -349,3 +349,79 @@ async def test_public_application_rate_limit(client):
     limited = await client.post("/api/public/applications", json={"email": "rl3@example.com"})
     assert limited.status_code == 429
     assert int(limited.headers["retry-after"]) > 0
+
+
+async def test_scope_crud_and_permissions(admin_client, client, plain_client, make_client):
+    program_id = client.ids["program_id"]
+
+    resp = await admin_client.post(
+        f"/api/programs/{program_id}/scope",
+        json={"target": "*.example.com", "severity_guide": "up to critical"},
+    )
+    assert resp.status_code == 201, resp.text
+    entry_id = resp.json()["id"]
+
+    # a researcher who is a member can read the scope
+    invite = (
+        await admin_client.post(f"/api/programs/{program_id}/invites", json={"email": "scopeviewer@test.com"})
+    ).json()
+    researcher = await make_client()
+    await researcher.post(
+        "/api/auth/researchers/register", json={"token": invite["token"], "password": "res12345"}
+    )
+    listing = await researcher.get(f"/api/programs/{program_id}/scope")
+    assert listing.status_code == 200 and len(listing.json()) == 1
+
+    # researchers cannot write scope (staff-only endpoints reject them before permission checks)
+    denied = await researcher.post(f"/api/programs/{program_id}/scope", json={"target": "evil.com"})
+    assert denied.status_code in (401, 403)
+
+    # plain staff without a program role can neither read nor write
+    assert (await plain_client.get(f"/api/programs/{program_id}/scope")).status_code == 403
+    assert (await plain_client.post(f"/api/programs/{program_id}/scope", json={"target": "x"})).status_code == 403
+
+    patch = await admin_client.patch(
+        f"/api/programs/{program_id}/scope/{entry_id}", json={"in_scope": False, "description": "deprecated"}
+    )
+    assert patch.status_code == 200 and patch.json()["in_scope"] is False
+
+    assert (await admin_client.delete(f"/api/programs/{program_id}/scope/{entry_id}")).status_code == 204
+    assert (await researcher.get(f"/api/programs/{program_id}/scope")).json() == []
+
+
+async def test_scope_csv_import(admin_client, client):
+    program_id = client.ids["program_id"]
+    csv_content = (
+        "target,description,in scope,severity guide\n"
+        "*.demo.example.com,main site,yes,up to critical\n"
+        "api.demo.example.com,public API,in,critical\n"
+        "legacy.example.com,deprecated asset,no,\n"
+        ",missing target row,,\n"
+        "*.demo.example.com,duplicate,yes,\n"
+    )
+    resp = await admin_client.post(
+        f"/api/programs/{program_id}/scope/import",
+        files={"file": ("scope.csv", csv_content.encode(), "text/csv")},
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json() == {"created": 3, "skipped": 2}
+
+    entries = (await admin_client.get(f"/api/programs/{program_id}/scope")).json()
+    by_target = {e["target"]: e for e in entries}
+    assert by_target["legacy.example.com"]["in_scope"] is False
+    assert by_target["api.demo.example.com"]["severity_guide"] == "critical"
+    assert by_target["*.demo.example.com"]["severity_guide"] == "up to critical"
+
+    # re-import: everything is either a duplicate (4 rows) or lacks a target (1 row)
+    again = await admin_client.post(
+        f"/api/programs/{program_id}/scope/import",
+        files={"file": ("scope.csv", csv_content.encode(), "text/csv")},
+    )
+    assert again.json() == {"created": 0, "skipped": 5}
+
+    # a CSV without a target column is rejected
+    bad = await admin_client.post(
+        f"/api/programs/{program_id}/scope/import",
+        files={"file": ("bad.csv", b"foo,bar\n1,2\n", "text/csv")},
+    )
+    assert bad.status_code == 400
