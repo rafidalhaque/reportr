@@ -40,6 +40,9 @@ REPORT_STATUSES = ("new", "triaging", "duplicate", "informative", "accepted", "r
 # Researcher may edit own report until triage moves it past these
 REPORT_EDITABLE_STATUSES = ("new", "triaging")
 SEVERITIES = ("info", "low", "medium", "high", "critical")
+# Leaderboard scoring: accepted/resolved reports earn points by severity
+SCORED_STATUSES = ("accepted", "resolved")
+SEVERITY_POINTS = {"info": 1, "low": 2, "medium": 4, "high": 8, "critical": 16}
 
 STAFF_COOKIE = "bb_staff"
 RESEARCHER_COOKIE = "bb_researcher"

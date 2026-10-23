@@ -33,6 +33,7 @@ function ProfileBody({ me }: { me: NonNullable<ReturnType<typeof useMe>["me"]> }
   const [profile, setProfile] = useState<Profile | null>(null);
   const [name, setName] = useState("");
   const [portfolioUrl, setPortfolioUrl] = useState("");
+  const [optIn, setOptIn] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -44,6 +45,7 @@ function ProfileBody({ me }: { me: NonNullable<ReturnType<typeof useMe>["me"]> }
         setProfile(p);
         setName(p.name);
         setPortfolioUrl(p.portfolio_url ?? "");
+        setOptIn(p.leaderboard_opt_in ?? true);
       })
       .catch((e) => setLoadError(errMessage(e)));
   }, []);
@@ -57,6 +59,7 @@ function ProfileBody({ me }: { me: NonNullable<ReturnType<typeof useMe>["me"]> }
       const updated = await apiPatch<Profile>("/me", {
         name,
         portfolio_url: profile?.kind === "researcher" ? portfolioUrl : undefined,
+        leaderboard_opt_in: profile?.kind === "researcher" ? optIn : undefined,
       });
       setProfile(updated);
       setSaved(true);
@@ -127,6 +130,13 @@ function ProfileBody({ me }: { me: NonNullable<ReturnType<typeof useMe>["me"]> }
                       placeholder="https://github.com/you or your blog"
                     />
                   </div>
+                )}
+
+                {isResearcher && (
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={optIn} onChange={(e) => setOptIn(e.target.checked)} />
+                    Show me on leaderboards and public halls of fame
+                  </label>
                 )}
 
                 <Button type="submit" disabled={saving}>

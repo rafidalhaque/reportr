@@ -97,6 +97,12 @@ export default function LandingPage() {
                         Apply
                         <ArrowRight className="h-3.5 w-3.5" />
                       </Link>
+                      <Link
+                        href={`/hall-of-fame/${program.slug}`}
+                        className={buttonVariants({ variant: "ghost", size: "sm", className: "self-start" })}
+                      >
+                        Hall of fame
+                      </Link>
                       {program.public_reporting && (
                         <Link
                           href={`/report/${program.slug}`}

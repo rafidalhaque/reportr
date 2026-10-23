@@ -168,6 +168,18 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
   contract), `todo.md` (roadmap), this file.
 - ✅ **OpenAPI** — interactive docs at `/api/docs`.
 
+## Leaderboard & researcher stats
+
+- ✅ **Leaderboard** (`GET /api/leaderboard`, optional `program_id`) — ranks opted-in,
+  non-banned researchers by points from accepted/resolved reports (info 1, low 2, medium 4,
+  high 8, critical 16; ties share a rank). Program rankings are limited to members and
+  staff with view access. UI: researcher sidebar → Leaderboard.
+- ✅ **Researcher stats** (`GET /api/me/stats`) — submitted, accepted, points, average
+  severity, global rank.
+- ✅ **Opt-in/out** — `leaderboard_opt_in` toggle on the profile page (default on).
+- ✅ **Public hall of fame** (`/hall-of-fame/{slug}`, `GET /api/public/programs/{slug}/hall-of-fame`)
+  — per public program; private and draft programs return 404.
+
 ## Theme & UI
 
 - ✅ **Dark / light theme** — class-based Tailwind dark mode, pre-paint initialization
@@ -184,5 +196,5 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
 
 Track submission by reference code (#1) · payouts & balances (#9) · per-program API keys ·
 researcher-facing invite/status emails (needs per-recipient SMTP wiring beyond the triage
-inbox) · audit log, SLA tracking, CSV/JSON export, leaderboards/hall-of-fame, duplicate-
+inbox) · audit log, SLA tracking, CSV/JSON export, duplicate-
 detection helper, custom domains, per-program branding (all deferred in the spec).

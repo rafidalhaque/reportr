@@ -573,3 +573,41 @@ async def test_public_report_cwe_and_form_scope(admin_client, client):
     assert private_info["available"] is True
     assert private_info["scope_markdown"] == ""
     assert private_info["scope_entries"] == []
+
+
+async def test_leaderboard_stats_and_hall_of_fame(admin_client, client, make_client):
+    program_id = client.ids["program_id"]
+    slug = (await admin_client.get(f"/api/programs/{program_id}")).json()["slug"]
+
+    async def researcher(email, name, severity):
+        invite = (await admin_client.post(f"/api/programs/{program_id}/invites", json={"email": email})).json()
+        c = await make_client()
+        await c.post("/api/auth/researchers/register", json={"token": invite["token"], "password": "res12345", "name": name})
+        report = (await c.post("/api/reports", json={"program_id": program_id, "title": "t", "severity": severity})).json()
+        return c, report["id"]
+
+    alice, a_report = await researcher("alice@test.com", "Alice", "critical")
+    bob, b_report = await researcher("bob@test.com", "Bob", "low")
+    for rid in (a_report, b_report):
+        await admin_client.patch(f"/api/reports/{rid}/triage", json={"status": "accepted"})
+
+    board = (await alice.get("/api/leaderboard")).json()
+    assert [(e["name"], e["rank"], e["points"]) for e in board] == [("Alice", 1, 16), ("Bob", 2, 2)]
+    assert board[0]["is_me"] is True and board[1]["is_me"] is False
+
+    stats = (await bob.get("/api/me/stats")).json()
+    assert stats["accepted"] == 1 and stats["points"] == 2 and stats["rank"] == 2 and stats["avg_severity"] == "low"
+    assert (await admin_client.get("/api/me/stats")).status_code == 403
+
+    hall = (await client.get(f"/api/public/programs/{slug}/hall-of-fame")).json()
+    assert [e["name"] for e in hall["entries"]] == ["Alice", "Bob"]
+
+    # opting out removes the researcher from every ranking
+    resp = await bob.patch("/api/me", json={"leaderboard_opt_in": False})
+    assert resp.json()["leaderboard_opt_in"] is False
+    assert [e["name"] for e in (await alice.get("/api/leaderboard", params={"program_id": program_id})).json()] == ["Alice"]
+    assert (await bob.get("/api/me/stats")).json()["rank"] is None
+
+    # private programs have no public hall of fame
+    await admin_client.patch(f"/api/programs/{program_id}", json={"visibility": "private"})
+    assert (await client.get(f"/api/public/programs/{slug}/hall-of-fame")).status_code == 404

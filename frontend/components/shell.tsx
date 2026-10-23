@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Loader2,
+  Trophy,
   LogOut,
   Menu,
   Settings,
@@ -73,6 +74,7 @@ function navFor(me: Me): NavItem[] {
   if (me.kind === "researcher") {
     return [
       { href: "/researcher", label: "My workspace", icon: LayoutDashboard },
+      { href: "/researcher/leaderboard", label: "Leaderboard", icon: Trophy },
       { href: "/profile", label: "My profile", icon: UserCircle },
     ];
   }

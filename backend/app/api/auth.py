@@ -115,7 +115,8 @@ async def _build_profile(actor, session: AsyncSession) -> ProfileRead:
     ]
     return ProfileRead(
         kind="researcher", id=u.id, email=u.email, name=u.name,
-        researcher_status=u.status, portfolio_url=u.portfolio_url, memberships=memberships,
+        researcher_status=u.status, portfolio_url=u.portfolio_url,
+        leaderboard_opt_in=u.leaderboard_opt_in, memberships=memberships,
     )
 
 
@@ -128,7 +129,7 @@ async def my_profile(actor=Depends(get_actor), session: AsyncSession = Depends(g
 async def update_me(
     payload: ProfileUpdate, actor=Depends(get_actor), session: AsyncSession = Depends(get_session)
 ):
-    """Edit own profile: name for everyone, portfolio URL for researchers (todo #13).
+    """Edit own profile: name for everyone; portfolio URL and leaderboard opt-in for researchers (todo #13).
 
     Email and password changes live in /me/email and /me/password (todo #14b).
     """
@@ -138,6 +139,8 @@ async def update_me(
         user.name = data["name"].strip()
     if actor.kind == "researcher" and "portfolio_url" in data:
         user.portfolio_url = data["portfolio_url"] or None
+    if actor.kind == "researcher" and data.get("leaderboard_opt_in") is not None:
+        user.leaderboard_opt_in = data["leaderboard_opt_in"]
     await session.commit()
     await session.refresh(user)
     return await _build_profile(actor, session)

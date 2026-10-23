@@ -200,6 +200,7 @@ export interface Profile {
   global_role?: string | null;
   researcher_status?: string | null;
   portfolio_url?: string | null;
+  leaderboard_opt_in?: boolean | null;
   memberships: ProfileMembership[];
 }
 
@@ -225,4 +226,27 @@ export interface EmailTemplateEntry {
 export interface EmailTemplatePreview {
   subject: string;
   body: string;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  name: string;
+  accepted: number;
+  points: number;
+  is_me: boolean;
+}
+
+export interface ResearcherStats {
+  submitted: number;
+  accepted: number;
+  points: number;
+  avg_severity: string | null;
+  rank: number | null;
+  leaderboard_opt_in: boolean;
+}
+
+export interface HallOfFame {
+  program_name: string;
+  program_slug: string;
+  entries: LeaderboardEntry[];
 }

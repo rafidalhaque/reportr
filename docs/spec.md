@@ -145,9 +145,9 @@ No cross-researcher visibility (can't see other researchers' reports/comments on
 
 ### Phase 2 — Researcher-side
 
-- Leaderboard (global + per-program), opt-in/out
-- Researcher stats (submitted/accepted/payout total/avg severity)
-- Public hall-of-fame page per program
+- Leaderboard (global + per-program), opt-in/out — shipped
+- Researcher stats (submitted/accepted/points/avg severity; payout total arrives with payouts) — shipped
+- Public hall-of-fame page per program — shipped
 
 ### Phase 2 — Public-facing
 

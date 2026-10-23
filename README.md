@@ -115,8 +115,7 @@ paths, RBAC, reports/triage, structured scope, CWE + CVSS, public report form, S
 notifications with editable templates, account flows, dark mode).
 
 Next up: see [todo.md](todo.md) — track-submission page, then payouts (Phase 2). Later (spec §5):
-staff Kanban board, duplicate-detection helper, leaderboards/hall-of-fame, public disclosure
-pages, audit log, SLAs.
+staff Kanban board, duplicate-detection helper, public disclosure pages, audit log, SLAs.
 
 The `org_id` column already exists on all tables as a forward-compatibility placeholder for the
 deferred SaaS layer (spec §7) — no multi-org logic is implemented.

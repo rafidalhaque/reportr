@@ -73,10 +73,12 @@ class ProfileRead(BaseModel):
     global_role: str | None = None
     researcher_status: str | None = None
     portfolio_url: str | None = None
+    leaderboard_opt_in: bool | None = None
     memberships: list[ProfileMembership]
 
 
 class ProfileUpdate(BaseModel):
+    leaderboard_opt_in: bool | None = None  # researchers only
     name: str | None = Field(default=None, max_length=200)
     portfolio_url: str | None = Field(default=None, max_length=500)  # researchers only
 
@@ -383,3 +385,27 @@ class EmailTemplatePreview(BaseModel):
 
 class TestSendRequest(BaseModel):
     recipient: EmailStr | None = None
+
+
+# --- Leaderboard, stats, hall of fame ----------------------------------------
+class LeaderboardEntry(BaseModel):
+    rank: int
+    name: str
+    accepted: int
+    points: int
+    is_me: bool = False
+
+
+class ResearcherStats(BaseModel):
+    submitted: int
+    accepted: int
+    points: int
+    avg_severity: str | None  # mean severity of accepted reports
+    rank: int | None  # global rank; None when opted out or nothing accepted yet
+    leaderboard_opt_in: bool
+
+
+class HallOfFame(BaseModel):
+    program_name: str
+    program_slug: str
+    entries: list[LeaderboardEntry]
