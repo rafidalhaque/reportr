@@ -111,17 +111,17 @@ function NewProgramForm({ onCreated }: { onCreated: (program: Program) => void }
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="program-scope">Scope (markdown)</Label>
+            <Label htmlFor="program-scope">Overview (markdown)</Label>
             <Textarea
               id="program-scope"
               rows={6}
               className="font-mono text-xs"
               value={scopeMarkdown}
               onChange={(e) => setScopeMarkdown(e.target.value)}
-              placeholder={"## In scope\n- *.example.com\n\n## Out of scope\n- mail.example.com"}
+              placeholder={"## Rules\n- No automated scanning\n- Report responsibly"}
             />
             <p className="text-xs text-slate-400">
-              Markdown supported — shown to researchers on the program page.
+              Program overview and rules (markdown) — shown to researchers on the program page. Add structured scope entries later on the Scope tab.
             </p>
           </div>
 
