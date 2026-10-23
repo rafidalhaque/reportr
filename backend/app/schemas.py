@@ -425,3 +425,21 @@ class NotificationRead(BaseModel):
 
 class UnreadCount(BaseModel):
     unread: int
+
+
+# --- Platform admin: researcher directory & promotion -------------------------
+class AdminResearcherRead(BaseModel):
+    id: UUID
+    email: str
+    name: str
+    status: str
+    portfolio_url: str | None
+    has_account: bool  # False for applicants who never activated an invite
+    reports: int
+    programs: int
+    is_staff: bool  # a staff account with the same email exists
+
+
+class PromoteRequest(BaseModel):
+    role: Literal["staff", "triager"]
+    program_id: UUID | None = None  # required for "triager"

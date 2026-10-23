@@ -52,7 +52,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from app.api import applications, auth, inbox, leaderboard, programs, public, reports, staff  # noqa: E402
+from app.api import applications, auth, inbox, leaderboard, platform_admin, programs, public, reports, staff  # noqa: E402
 from app.api import email_admin as email_admin_api  # noqa: E402
 from app.api import scope as scope_api  # noqa: E402
 from app.api import settings as settings_api  # noqa: E402  (aliased: `settings` is the config object)
@@ -69,6 +69,7 @@ app.include_router(email_admin_api.router, prefix="/api")
 app.include_router(public.router, prefix="/api")
 app.include_router(leaderboard.router, prefix="/api")
 app.include_router(inbox.router, prefix="/api")
+app.include_router(platform_admin.router, prefix="/api")
 
 
 @app.get("/api/health")

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
+  Contact,
   LayoutDashboard,
   Loader2,
   Trophy,
@@ -86,6 +87,7 @@ function navFor(me: Me): NavItem[] {
   ];
   if (me.global_role === "super_admin") {
     items.push(
+      { href: "/platform", label: "Researchers & applications", icon: Contact },
       { href: "/staff", label: "Staff", icon: Users },
       { href: "/settings", label: "Platform settings", icon: Settings }
     );

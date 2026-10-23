@@ -40,6 +40,17 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
   unread badge, and accept/decline from `/researcher/notifications`
   (`GET /api/me/notifications`, `POST /api/me/invites/{id}/accept|decline`). Decline revokes.
 
+## Platform directory (super admin)
+
+- ✅ **Researchers & applications page** (`/platform`) — every researcher with status,
+  program/report counts and whether they already have a staff login
+  (`GET /api/admin/researchers`, searchable), plus all applications across programs with
+  approve/reject (pick a program for ones that applied without one).
+- ✅ **Promote researcher** (`POST /api/admin/researchers/{id}/promote`) — creates a staff
+  login with the same email and password hash as `staff` or as `triager` of a chosen program
+  (never downgrades an existing owner). The researcher account stays; the two sign-ins remain
+  separate. Applicants without an account and banned researchers cannot be promoted.
+
 ## Roles & permissions (RBAC)
 
 - ✅ **Global roles** — `super_admin` (everything), `org_admin` (programs, staff
@@ -171,7 +182,7 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
   backend and everything else to the frontend.
 - ✅ **Idempotent seed** — default org, super admin, demo program with example scope,
   platform settings, email templates.
-- ✅ **Test suite** — 36 tests on in-memory SQLite: end-to-end API flows (invites, reports,
+- ✅ **Test suite** — 37 tests on in-memory SQLite: end-to-end API flows (invites, reports,
   triage, RBAC, public forms, applications), email-stack tests with captured delivery, the
   CWE catalog sync check, and a static AST guard against Python 3.12/3.14 annotation-order
   drift.

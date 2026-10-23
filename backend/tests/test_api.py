@@ -687,3 +687,35 @@ async def test_invite_existing_researcher_with_inbox(admin_client, client, make_
     assert third not in [p["id"] for p in (await researcher.get("/api/programs")).json()]
     assert (await researcher.post(f"/api/me/invites/{inv2['id']}/accept")).status_code == 400
     assert (await admin_client.get("/api/me/notifications")).status_code == 403  # staff have no inbox
+
+
+async def test_admin_researcher_directory_and_promotion(admin_client, plain_client, client, make_client):
+    program_id = client.ids["program_id"]
+    invite = (await admin_client.post(f"/api/programs/{program_id}/invites", json={"email": "grow@test.com"})).json()
+    researcher = await make_client()
+    await researcher.post("/api/auth/researchers/register", json={"token": invite["token"], "password": "res12345", "name": "Grow"})
+    await researcher.post("/api/reports", json={"program_id": program_id, "title": "t"})
+    await client.post("/api/public/applications", json={"email": "applicant@test.com"})  # applicant, no account
+
+    assert (await plain_client.get("/api/admin/researchers")).status_code == 403
+    rows = {r["email"]: r for r in (await admin_client.get("/api/admin/researchers")).json()}
+    assert rows["grow@test.com"]["reports"] == 1 and rows["grow@test.com"]["programs"] == 1
+    assert rows["grow@test.com"]["has_account"] and not rows["grow@test.com"]["is_staff"]
+    assert rows["applicant@test.com"]["has_account"] is False
+    assert [r["email"] for r in (await admin_client.get("/api/admin/researchers", params={"q": "gro"})).json()] == ["grow@test.com"]
+
+    rid = rows["grow@test.com"]["id"]
+    assert (await admin_client.post(f"/api/admin/researchers/{rows['applicant@test.com']['id']}/promote", json={"role": "staff"})).status_code == 400
+    assert (await admin_client.post(f"/api/admin/researchers/{rid}/promote", json={"role": "triager"})).status_code == 400  # needs program
+
+    promoted = await admin_client.post(f"/api/admin/researchers/{rid}/promote", json={"role": "triager", "program_id": program_id})
+    assert promoted.status_code == 200, promoted.text
+    assert promoted.json()["global_role"] == "staff"
+    assert (await admin_client.post(f"/api/admin/researchers/{rid}/promote", json={"role": "staff"})).status_code == 409
+
+    # the researcher can now sign in as staff with the same password and triage that program
+    staff_client = await make_client()
+    login = await staff_client.post("/api/auth/staff/login", data={"username": "grow@test.com", "password": "res12345"})
+    assert login.status_code in (200, 204)
+    report_id = (await staff_client.get("/api/reports")).json()[0]["id"]
+    assert (await staff_client.patch(f"/api/reports/{report_id}/triage", json={"status": "triaging"})).status_code == 200
