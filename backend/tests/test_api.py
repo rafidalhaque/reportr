@@ -31,16 +31,16 @@ async def test_me_endpoint(admin_client):
 async def test_program_create_and_rbac(admin_client, plain_client):
     resp = await admin_client.post(
         "/api/programs",
-        json={"name": "Acme Web", "scope_markdown": "in scope: acme.com", "status": "active", "visibility": "public"},
+        json={"name": "Acme Web", "scope_markdown": "in scope: acme.com", "status": "active", "visibility": "private"},
     )
     assert resp.status_code == 201, resp.text
     assert resp.json()["slug"] == "acme-web"
     program_id = resp.json()["id"]
 
-    # Plain staff (global "staff", no program role) sees nothing and is denied detail
+    # Plain staff (global "staff", no program role) sees only open (public/internal) programs and is denied private detail
     listing = await plain_client.get("/api/programs")
     assert listing.status_code == 200
-    assert listing.json() == []
+    assert [p["slug"] for p in listing.json()] == ["test-program"]
     assert (await plain_client.get(f"/api/programs/{program_id}")).status_code == 403
 
     # org-level admin sees everything
@@ -377,8 +377,8 @@ async def test_scope_crud_and_permissions(admin_client, client, plain_client, ma
     denied = await researcher.post(f"/api/programs/{program_id}/scope", json={"target": "evil.com"})
     assert denied.status_code in (401, 403)
 
-    # plain staff without a program role can neither read nor write
-    assert (await plain_client.get(f"/api/programs/{program_id}/scope")).status_code == 403
+    # plain staff without a program role can read scope of this public program but never write
+    assert (await plain_client.get(f"/api/programs/{program_id}/scope")).status_code == 200
     assert (await plain_client.post(f"/api/programs/{program_id}/scope", json={"target": "x"})).status_code == 403
 
     patch = await admin_client.patch(
@@ -774,7 +774,7 @@ async def test_admin_manages_researcher_memberships(admin_client, plain_client, 
 
     # revoked from one program ...
     assert (await admin_client.delete(f"/api/admin/researchers/{rid}/memberships/{program_id}")).status_code == 204
-    assert (await researcher.get("/api/programs")).json() == []
+    assert (await admin_client.get(f"/api/admin/researchers/{rid}/memberships")).json() == []
     # ... and assigned straight to another (and back to the first), researcher is told in the inbox
     assert (await admin_client.post(f"/api/admin/researchers/{rid}/memberships", json={"program_id": other})).status_code == 201
     assert (await admin_client.post(f"/api/admin/researchers/{rid}/memberships", json={"program_id": other})).status_code == 409
@@ -888,3 +888,18 @@ async def test_hacktivity_feed(admin_client, client, make_client):
     # cursor: nothing older than the beginning of time
     await admin_client.patch(f"/api/programs/{program_id}", json={"visibility": "public"})
     assert (await hidden.get("/api/hacktivity", params={"before": "2000-01-01T00:00:00Z"})).json() == []
+
+
+async def test_public_programs_listed_for_logged_in_users(admin_client, plain_client, client, make_client):
+    pub = client.ids["program_id"]  # seeded public + active
+    draft = (await admin_client.post("/api/programs", json={"name": "Draft Pub", "visibility": "public"})).json()["id"]
+    invite = (await admin_client.post(f"/api/programs/{pub}/invites", json={"email": "lister@test.com"})).json()
+    researcher = await make_client()
+    await researcher.post("/api/auth/researchers/register", json={"token": invite["token"], "password": "res12345"})
+    await admin_client.delete(f"/api/admin/researchers/{(await researcher.get('/api/me')).json()['id']}/memberships/{pub}")
+
+    for who in (plain_client, researcher):  # staff without a role, and a non-member researcher
+        ids = [p["id"] for p in (await who.get("/api/programs")).json()]
+        assert pub in ids and draft not in ids
+        assert (await who.get(f"/api/programs/{pub}")).status_code == 200
+    assert (await researcher.post("/api/reports", json={"program_id": pub, "title": "t"})).status_code == 201

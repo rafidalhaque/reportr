@@ -10,6 +10,7 @@ from app.constants import (
     ACTION_VIEW_REPORTS,
     ALLOWED_UPLOAD_EXTENSIONS,
     MAX_UPLOAD_BYTES,
+    OPEN_VISIBILITIES,
     PROGRAM_ROLE_ACTIONS,
     REPORT_EDITABLE_STATUSES,
     REPORT_STATUSES,
@@ -170,7 +171,7 @@ async def create_report(
             ProgramMembership.program_id == program.id,
         )
     )
-    if membership is None and program.visibility != "internal":  # internal = open to any logged-in researcher
+    if membership is None and program.visibility not in OPEN_VISIBILITIES:  # public/internal: any logged-in researcher
         raise HTTPException(403, "You are not a member of this program")
     if program.status != "active":
         raise HTTPException(400, "This program is not accepting reports right now")

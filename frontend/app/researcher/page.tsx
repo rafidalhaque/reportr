@@ -9,7 +9,7 @@ import type { Program, Report } from "@/lib/types";
 import { useMe } from "@/components/auth";
 import { AppShell, FullPageLoader } from "@/components/shell";
 import { ErrorAlert } from "@/components/alerts";
-import { ProgramStatusBadge, ReportStatusBadge, SeverityBadge } from "@/components/badges";
+import { ProgramStatusBadge, ReportStatusBadge, SeverityBadge, VisibilityBadge } from "@/components/badges";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -52,7 +52,7 @@ export default function ResearcherHomePage() {
         {error && <div className="mb-6"><ErrorAlert>{error}</ErrorAlert></div>}
 
         <section className="mb-10">
-          <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">My programs</h2>
+          <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Programs</h2>
           {!programs && (
             <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -62,8 +62,7 @@ export default function ResearcherHomePage() {
           {programs && programs.length === 0 && (
             <Card>
               <CardContent className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
-                You are not a member of any program yet. You will get access once your
-                application is approved and an invite is issued.
+                No programs are open right now. Private programs appear once you are invited.
               </CardContent>
             </Card>
           )}
@@ -75,7 +74,10 @@ export default function ResearcherHomePage() {
                     <CardHeader>
                       <div className="flex items-start justify-between gap-2">
                         <CardTitle className="group-hover:text-indigo-700">{program.name}</CardTitle>
-                        <ProgramStatusBadge status={program.status} />
+                        <div className="flex gap-1">
+                          <ProgramStatusBadge status={program.status} />
+                          <VisibilityBadge visibility={program.visibility} />
+                        </div>
                       </div>
                       <CardDescription>Created {fmtDate(program.created_at)}</CardDescription>
                     </CardHeader>

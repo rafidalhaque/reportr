@@ -166,7 +166,7 @@ export default function DashboardPage() {
             <p className="text-sm text-slate-500 dark:text-slate-400">
               {isOrgAdmin
                 ? "All programs in the organization."
-                : "Programs you are assigned to."}
+                : "Programs you are assigned to, plus all public and internal programs."}
             </p>
           </div>
           {isOrgAdmin && (

@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.constants import ACTION_VIEW_REPORTS, SCORED_STATUSES, SEVERITIES, SEVERITY_POINTS
+from app.constants import ACTION_VIEW_REPORTS, OPEN_VISIBILITIES, SCORED_STATUSES, SEVERITIES, SEVERITY_POINTS
 from app.core.deps import get_actor
 from app.core.permissions import has_program_perm
 from app.database import get_session
@@ -71,7 +71,7 @@ async def leaderboard(
                 )
             )
             program = await session.get(Program, program_id)
-            if program is None or (member is None and program.visibility != "internal"):
+            if program is None or (member is None and not (program.visibility in OPEN_VISIBILITIES and program.status != "draft")):
                 raise HTTPException(404, "Program not found")
         elif not await has_program_perm(session, actor.staff, program_id, ACTION_VIEW_REPORTS):
             raise HTTPException(403, "Insufficient permissions for this program")

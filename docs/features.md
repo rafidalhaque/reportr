@@ -106,11 +106,12 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
   applications, member count.
 - ✅ **Role-filtered program listing** — org-level roles see all programs; ordinary staff
   see only programs they hold a role on; researchers see their memberships.
-- ✅ **Internal visibility** — `internal` programs behave like public ones for logged-in
-  users only: any logged-in researcher can read the program and scope, submit reports
-  (no membership or invite needed) and see its leaderboard; any staff member can read it
-  (reports, invites and stats stay role-gated). Never listed publicly. `private` programs
-  stay invite-only from the program.
+- ✅ **Open programs for logged-in users** — `public` and `internal` programs (not drafts) are
+  listed on every logged-in dashboard and readable (details + scope) by any logged-in researcher or
+  staff member. Researchers can also submit reports to them (no membership or invite needed) and
+  see their leaderboard. `internal` is never listed publicly; `public` also appears on the public
+  site. Reports, invites and stats stay role-gated for staff. `private` programs stay invite-only
+  from the program.
 - ✅ **Public API documentation tab** — per-program view of the public endpoints with live
   URLs, copy-ready `curl` examples, response samples, rate-limit and error-contract notes.
 - ✅ **`org_id` forward compatibility** — every domain table carries the column for the
@@ -226,7 +227,7 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
   backend and everything else to the frontend.
 - ✅ **Idempotent seed** — default org, super admin, demo program with example scope,
   platform settings, email templates.
-- ✅ **Test suite** — 44 tests on in-memory SQLite: end-to-end API flows (invites, reports,
+- ✅ **Test suite** — 45 tests on in-memory SQLite: end-to-end API flows (invites, reports,
   triage, RBAC, public forms, applications), email-stack tests with captured delivery, the
   CWE catalog sync check, and a static AST guard against Python 3.12/3.14 annotation-order
   drift.

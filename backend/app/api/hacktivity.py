@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.auth import _aware
-from app.constants import SCORED_STATUSES
+from app.constants import OPEN_VISIBILITIES, SCORED_STATUSES
 from app.core.deps import get_actor
 from app.database import get_session
 from app.models import Program, Report, Researcher
@@ -19,7 +19,7 @@ from app.schemas import HacktivityEvent
 
 router = APIRouter(tags=["hacktivity"])
 
-_VISIBLE = (Program.visibility.in_(("public", "internal")), Program.status.not_in(("draft", "suspended")))
+_VISIBLE = (Program.visibility.in_(OPEN_VISIBILITIES), Program.status.not_in(("draft", "suspended")))
 
 
 @router.get("/hacktivity", response_model=list[HacktivityEvent])

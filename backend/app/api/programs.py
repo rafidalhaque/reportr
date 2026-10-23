@@ -13,6 +13,7 @@ from app.constants import (
     ACTION_MANAGE_INVITES,
     ACTION_MANAGE_SCOPE,
     ACTION_VIEW_REPORTS,
+    OPEN_VISIBILITIES,
     PROGRAM_ROLES,
 )
 from app.core.deps import get_actor
@@ -50,6 +51,10 @@ from app.services.inbox import notify_invited_researcher
 from app.services.notifications import send_notification
 
 router = APIRouter(prefix="/programs", tags=["programs"])
+
+
+def _open_to_all(program: Program) -> bool:
+    return program.visibility in OPEN_VISIBILITIES and program.status != "draft"
 
 
 def slugify(value: str) -> str:
@@ -96,9 +101,9 @@ async def create_program(
 @router.get("", response_model=list[ProgramRead])
 async def list_programs(actor=Depends(get_actor), session: AsyncSession = Depends(get_session)):
     """Staff: super_admin/org_admin/auditor see all, others see programs they hold a role on.
-    Researchers: programs they hold a membership in. Everyone logged in also sees internal programs."""
+    Researchers: programs they hold a membership in. Everyone logged in also sees public and internal programs (not drafts)."""
     query = select(Program).order_by(Program.created_at.desc())
-    internal = Program.visibility == "internal"  # visible to every logged-in account
+    internal = Program.visibility.in_(OPEN_VISIBILITIES) & (Program.status != "draft")  # open to every logged-in account
     if actor.kind == "researcher":
         member_of = select(ProgramMembership.program_id).where(ProgramMembership.researcher_id == actor.researcher.id)
         return list((await session.scalars(query.where(internal | Program.id.in_(member_of)))).all())
@@ -119,14 +124,14 @@ async def get_program(program_id: UUID, actor=Depends(get_actor), session: Async
                 ProgramMembership.program_id == program_id,
             )
         )
-        if program is None or (membership is None and program.visibility != "internal"):
+        if program is None or (membership is None and not _open_to_all(program)):
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Program not found")
         return program
     user = actor.staff
     program = await session.get(Program, program_id)
     if program is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Program not found")
-    if program.visibility != "internal" and not await has_program_perm(
+    if not _open_to_all(program) and not await has_program_perm(
         session, user, program_id, ACTION_VIEW_REPORTS
     ):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Insufficient permissions for this program")

@@ -36,6 +36,8 @@ PROGRAM_ROLES = set(PROGRAM_ROLE_ACTIONS)
 PROGRAM_STATUSES = ("draft", "active", "paused", "closed", "suspended")
 # internal: any logged-in researcher or staff member may view it (not listed publicly)
 PROGRAM_VISIBILITIES = ("public", "internal", "private")
+# Programs every logged-in account may see (drafts excepted); private ones stay invite/role only
+OPEN_VISIBILITIES = ("public", "internal")
 RESEARCHER_STATUSES = ("applicant", "active", "banned")
 APPLICATION_STATUSES = ("pending", "approved", "rejected")
 REPORT_STATUSES = ("new", "triaging", "duplicate", "informative", "accepted", "resolved")

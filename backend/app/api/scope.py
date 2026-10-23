@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.constants import ACTION_MANAGE_SCOPE, ACTION_VIEW_REPORTS
+from app.constants import ACTION_MANAGE_SCOPE, ACTION_VIEW_REPORTS, OPEN_VISIBILITIES
 from app.core.deps import get_actor
 from app.core.guards import require_program_perm
 from app.core.permissions import has_program_perm
@@ -34,7 +34,7 @@ async def _authorized(session: AsyncSession, actor, program_id: UUID) -> None:
     """Staff need view_reports; researchers need membership (mirrors program detail).
     Internal programs are readable by any logged-in account."""
     program = await session.get(Program, program_id)
-    if program is not None and program.visibility == "internal":
+    if program is not None and program.visibility in OPEN_VISIBILITIES and program.status != "draft":
         return
     if actor.kind == "staff":
         if not await has_program_perm(session, actor.staff, program_id, ACTION_VIEW_REPORTS):
