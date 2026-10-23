@@ -60,11 +60,7 @@ DEFAULT_TEMPLATES: dict[str, dict[str, str]] = {
     },
     "new_application": {
         "subject": "New researcher application — {{email}}",
-        "body": (
-            "A new researcher application arrived from {{email}}{{for_program}}.\n\n"
-            "Message: {{message}}\n"
-            "Portfolio: {{portfolio}}"
-        ),
+        "body": "A new researcher application arrived from {{email}}{{for_program}}.",
     },
     "application_approved": {
         "subject": "Application approved — {{email}}",
@@ -113,8 +109,7 @@ SAMPLE_CONTEXT: dict[str, dict[str, str]] = {
                       "old_status": "new", "new_status": "triaging"},
     "new_comment": {"author": "Jane", "author_kind": "staff", "title": "Sample finding",
                     "reference": "ABCD1234", "internal": "", "comment": "Sample comment body."},
-    "new_application": {"email": "jane@example.com", "for_program": " for Sample Program",
-                        "message": "Sample message.", "portfolio": "https://jane.example.com"},
+    "new_application": {"email": "jane@example.com", "for_program": " for Sample Program"},
     "application_approved": {"email": "jane@example.com", "program": "Sample Program", "expires": "2026-09-30"},
     "invite_created": {"email": "jane@example.com", "program": "Sample Program", "expires": "2026-09-30"},
     "invite_new": {"email": "jane@example.com", "program": "Sample Program", "expires": "2026-09-30",

@@ -32,7 +32,8 @@ class Researcher(SQLAlchemyBaseUserTableUUID, Base):
     __tablename__ = "researchers"
 
     name: Mapped[str] = mapped_column(String(200), default="")
-    portfolio_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Answers to the super-admin-defined profile/application fields: [{field_id, label, field_type, value}]
+    answers: Mapped[list] = mapped_column(JSON, default=list)
     status: Mapped[str] = mapped_column(String(32), default="applicant")  # applicant/active/banned
     leaderboard_opt_in: Mapped[bool] = mapped_column(Boolean, default=True)
 
@@ -81,10 +82,25 @@ class Application(Base):
     email: Mapped[str] = mapped_column(String(320), index=True)
     name: Mapped[str] = mapped_column(String(200), default="")
     program_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("programs.id"), nullable=True)
-    message: Mapped[str] = mapped_column(Text, default="")
-    portfolio_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="pending")  # pending/approved/rejected
     decided_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("staff_users.id"), nullable=True)
+    # Answers to the super-admin-defined form fields, snapshotted: [{field_id, label, field_type, value}]
+    answers: Mapped[list] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ApplicationField(Base):
+    """Extra question on the researcher application form, managed by a super admin."""
+
+    __tablename__ = "application_fields"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    label: Mapped[str] = mapped_column(String(200))
+    field_type: Mapped[str] = mapped_column(String(32))  # text/textarea/dropdown/checkbox/url/number
+    required: Mapped[bool] = mapped_column(Boolean, default=False)
+    options: Mapped[list] = mapped_column(JSON, default=list)  # dropdown choices
+    help_text: Mapped[str] = mapped_column(String(500), default="")
+    position: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

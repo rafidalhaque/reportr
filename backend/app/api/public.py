@@ -9,9 +9,10 @@ from app.api.settings import get_or_create_settings
 from app.config import get_settings
 from app.cwe import resolve_cwe
 from app.database import get_session
-from app.models import Application, Program, Report, Researcher, ScopeEntry
+from app.models import Application, ApplicationField, Program, Report, Researcher, ScopeEntry
 from app.schemas import (
     ApplicationCreate,
+    ApplicationFieldRead,
     ApplicationRead,
     InviteInfo,
     PlatformSettingsRead,
@@ -22,6 +23,7 @@ from app.schemas import (
     ScopeEntryRead,
 )
 from app.services.notifications import send_notification
+from app.services.application_fields import form_fields, validate_answers
 from app.services.rate_limit import rate_limit
 
 router = APIRouter(prefix="/public", tags=["public"])
@@ -32,6 +34,12 @@ async def public_platform_info(session: AsyncSession = Depends(get_session)):
     """Platform flags the public site needs before rendering its forms."""
     settings = await get_or_create_settings(session)
     return PlatformSettingsRead(researcher_applications_enabled=settings.researcher_applications_enabled)
+
+
+@router.get("/application-fields", response_model=list[ApplicationFieldRead])
+async def public_application_fields(session: AsyncSession = Depends(get_session)):
+    """Extra questions on the application form (defined by a super admin)."""
+    return await form_fields(session)
 
 
 @router.get("/programs", response_model=list[PublicProgramOut])
@@ -74,6 +82,7 @@ async def public_apply(payload: ApplicationCreate, session: AsyncSession = Depen
         raise HTTPException(403, "Researcher applications are currently closed")
 
     email = payload.email.lower()
+    answers = validate_answers(await form_fields(session), payload.answers)
     program = None
     if payload.program_id is not None:
         program = await session.get(Program, payload.program_id)
@@ -88,18 +97,24 @@ async def public_apply(payload: ApplicationCreate, session: AsyncSession = Depen
             hashed_password="",  # set when the invite is accepted
             status="applicant",
             is_active=True,
+            answers=answers,
         )
         session.add(researcher)
     elif researcher.status == "banned":
         raise HTTPException(403, "This account cannot apply")
+    elif not researcher.hashed_password:
+        # Applicant without an account yet: keep their latest answers on the profile.
+        # (Never overwrite an activated researcher's profile from an unauthenticated form.)
+        merged = {a["field_id"]: a for a in researcher.answers or []}
+        merged.update({a["field_id"]: a for a in answers})
+        researcher.answers = list(merged.values())
 
     application = Application(
         org_id=program.org_id if program else None,
         email=email,
         name=payload.name,
         program_id=program.id if program else None,
-        message=payload.message,
-        portfolio_url=payload.portfolio_url,
+        answers=answers,
     )
     session.add(application)
     await session.commit()
@@ -111,8 +126,6 @@ async def public_apply(payload: ApplicationCreate, session: AsyncSession = Depen
         {
             "email": email,
             "for_program": f" for {program.name}" if program else "",
-            "message": payload.message or "—",
-            "portfolio": payload.portfolio_url or "—",
         },
     )
     return application

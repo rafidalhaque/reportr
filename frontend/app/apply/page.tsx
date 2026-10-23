@@ -5,14 +5,14 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, ShieldAlert } from "lucide-react";
 import { apiGet, apiPost, errMessage } from "@/lib/api";
-import type { PlatformSettings, PublicProgram } from "@/lib/types";
+import type { ApplicationField, PlatformSettings, PublicProgram } from "@/lib/types";
 import { PublicHeader, FullPageLoader } from "@/components/shell";
+import { FieldInputs, type AnswerMap } from "@/components/application-fields";
 import { ErrorAlert } from "@/components/alerts";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 
 function ApplyForm() {
@@ -21,11 +21,11 @@ function ApplyForm() {
 
   const [programs, setPrograms] = useState<PublicProgram[]>([]);
   const [applicationsOpen, setApplicationsOpen] = useState<boolean | null>(null);
+  const [fields, setFields] = useState<ApplicationField[]>([]);
+  const [answers, setAnswers] = useState<AnswerMap>({});
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [programId, setProgramId] = useState(preselect);
-  const [message, setMessage] = useState("");
-  const [portfolioUrl, setPortfolioUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
@@ -34,6 +34,9 @@ function ApplyForm() {
     apiGet<PlatformSettings>("/public/platform")
       .then((s) => setApplicationsOpen(s.researcher_applications_enabled))
       .catch(() => setApplicationsOpen(true)); // fail open; the API still enforces the flag
+    apiGet<ApplicationField[]>("/public/application-fields")
+      .then(setFields)
+      .catch(() => setFields([]));
     apiGet<PublicProgram[]>("/public/programs")
       .then(setPrograms)
       .catch(() => setPrograms([]));
@@ -52,8 +55,7 @@ function ApplyForm() {
         email,
         name: name || undefined,
         program_id: programId || undefined,
-        message: message || undefined,
-        portfolio_url: portfolioUrl || undefined,
+        answers,
       });
       setDone(true);
     } catch (err) {
@@ -149,27 +151,7 @@ function ApplyForm() {
             </Select>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="portfolio">Portfolio URL</Label>
-            <Input
-              id="portfolio"
-              type="url"
-              value={portfolioUrl}
-              onChange={(e) => setPortfolioUrl(e.target.value)}
-              placeholder="https://github.com/you or your blog"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="message">Message</Label>
-            <Textarea
-              id="message"
-              rows={4}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Experience, focus areas, anything else relevant…"
-            />
-          </div>
+          <FieldInputs fields={fields} answers={answers} onChange={setAnswers} />
 
           <Button type="submit" className="w-full" disabled={submitting}>
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}

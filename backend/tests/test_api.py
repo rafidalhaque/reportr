@@ -166,7 +166,7 @@ async def test_public_application_auto_invite_flow(admin_client, client, fresh_c
 
     resp = await fresh_client.post(
         "/api/public/applications",
-        json={"email": "applicant@test.com", "name": "App Llicant", "program_id": program_id, "message": "hello"},
+        json={"email": "applicant@test.com", "name": "App Llicant", "program_id": program_id},
     )
     assert resp.status_code == 201, resp.text
     application_id = resp.json()["id"]
@@ -477,19 +477,27 @@ async def test_profile_get_and_update(admin_client, client, make_client):
     match = next(m for m in prof["memberships"] if m["program_slug"] == "test-program")
     assert match["role"] == "owner"
 
-    # researcher profile: membership list + name/portfolio update
+    # researcher profile: membership list + name/custom field update
     invite = (await admin_client.post(f"/api/programs/{program_id}/invites", json={"email": "prof@test.com"})).json()
     researcher = await make_client()
     await researcher.post(
         "/api/auth/researchers/register", json={"token": invite["token"], "password": "res12345", "name": "Prof"}
     )
     prof = (await researcher.get("/api/me/profile")).json()
-    assert prof["kind"] == "researcher" and prof["portfolio_url"] is None
+    assert prof["kind"] == "researcher" and prof["answers"] == []
     assert any(m["role"] == "member" and m["program_slug"] == "test-program" for m in prof["memberships"])
 
-    patched = await researcher.patch("/api/me", json={"name": "Prof X", "portfolio_url": "https://prof.example.com"})
+    site = (await admin_client.post(
+        "/api/admin/application-fields", json={"label": "Website", "field_type": "url", "required": True}
+    )).json()
+    patched = await researcher.patch("/api/me", json={"name": "Prof X"})  # required field unanswered: still saves
     assert patched.json()["name"] == "Prof X"
-    assert patched.json()["portfolio_url"] == "https://prof.example.com"
+    bad = await researcher.patch("/api/me", json={"answers": {site["id"]: "not a url"}})
+    assert bad.status_code == 422
+    good = await researcher.patch("/api/me", json={"answers": {site["id"]: "https://prof.example.com"}})
+    assert [(a["label"], a["value"]) for a in good.json()["answers"]] == [("Website", "https://prof.example.com")]
+    listed = {r["email"]: r for r in (await admin_client.get("/api/admin/researchers")).json()}
+    assert listed["prof@test.com"]["answers"][0]["value"] == "https://prof.example.com"  # visible to the super admin
 
 
 async def test_cwe_on_reports(admin_client, client, make_client):
@@ -780,3 +788,65 @@ async def test_admin_manages_researcher_memberships(admin_client, plain_client, 
     assert (await admin_client.post(f"/api/admin/researchers/{rid}/memberships", json={"program_id": program_id})).status_code == 403
     assert (await researcher.post("/api/reports", json={"program_id": other, "title": "x"})).status_code == 403
     assert (await admin_client.patch(f"/api/admin/researchers/{rid}", json={"status": "active"})).json()["status"] == "active"
+
+
+async def test_application_form_fields(admin_client, plain_client, client, make_client):
+    assert (await plain_client.get("/api/admin/application-fields")).status_code == 403
+    assert (await admin_client.post("/api/admin/application-fields", json={"label": "Pick", "field_type": "dropdown"})).status_code == 422
+
+    country = (await admin_client.post(
+        "/api/admin/application-fields",
+        json={"label": "Experience", "field_type": "dropdown", "required": True, "options": ["Beginner", " Pro ", "Pro"]},
+    )).json()
+    assert country["options"] == ["Beginner", "Pro"] and country["position"] == 0
+    terms = (await admin_client.post(
+        "/api/admin/application-fields", json={"label": "I agree to the rules", "field_type": "checkbox", "required": True}
+    )).json()
+    age = (await admin_client.post("/api/admin/application-fields", json={"label": "Years", "field_type": "number"})).json()
+    assert (await admin_client.patch(f"/api/admin/application-fields/{age['id']}", json={"position": 0})).json()["position"] == 0
+
+    anon = await make_client()
+    fields = (await anon.get("/api/public/application-fields")).json()
+    assert [f["label"] for f in fields][-1] in ("Experience", "I agree to the rules")
+
+    def apply(answers, email="f@test.com"):
+        from app.services.rate_limit import reset_rate_limiters
+
+        reset_rate_limiters()  # many attempts in one test; the limiter has its own test
+        return anon.post("/api/public/applications", json={"email": email, "answers": answers})
+
+    assert (await apply({})).status_code == 422                                   # required missing
+    assert (await apply({country["id"]: "Expert", terms["id"]: True})).status_code == 422  # not an option
+    assert (await apply({country["id"]: "Pro", terms["id"]: False})).status_code == 422    # unchecked required
+    assert (await apply({country["id"]: "Pro", terms["id"]: True, age["id"]: "abc"})).status_code == 422
+
+    ok = await apply({country["id"]: "Pro", terms["id"]: True, age["id"]: "7", "bogus": "ignored"})
+    assert ok.status_code == 201, ok.text
+    stored = {a["label"]: a["value"] for a in ok.json()["answers"]}
+    assert stored == {"Experience": "Pro", "I agree to the rules": True, "Years": 7}
+
+    # answers are visible to staff and survive deleting the field
+    assert (await admin_client.delete(f"/api/admin/application-fields/{country['id']}")).status_code == 204
+    listed = (await admin_client.get("/api/applications")).json()
+    assert any(a["answers"] and a["answers"][0]["label"] for a in listed)
+
+
+async def test_application_answers_populate_profile(admin_client, client, make_client):
+    field = (await admin_client.post(
+        "/api/admin/application-fields", json={"label": "Handle", "field_type": "text", "required": True}
+    )).json()
+    anon = await make_client()
+    resp = await anon.post("/api/public/applications", json={"email": "prof2@test.com", "answers": {field["id"]: "h4x"}})
+    assert resp.status_code == 201, resp.text
+    program_id = client.ids["program_id"]
+    invite = (await admin_client.post(f"/api/programs/{program_id}/invites", json={"email": "prof2@test.com"})).json()
+    researcher = await make_client()
+    await researcher.post("/api/auth/researchers/register", json={"token": invite["token"], "password": "res12345"})
+    prof = (await researcher.get("/api/me/profile")).json()
+    assert [(a["label"], a["value"]) for a in prof["answers"]] == [("Handle", "h4x")]
+
+    # a later application for an activated account must not overwrite its profile
+    from app.services.rate_limit import reset_rate_limiters
+    reset_rate_limiters()
+    await anon.post("/api/public/applications", json={"email": "prof2@test.com", "answers": {field["id"]: "evil"}})
+    assert (await researcher.get("/api/me/profile")).json()["answers"][0]["value"] == "h4x"

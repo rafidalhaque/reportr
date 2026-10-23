@@ -43,8 +43,9 @@ All tables carry `org_id` (nullable/defaulted to a single org row for MVP) — c
 | `programs` | org_id, name, slug, description, scope/rules (markdown), status (draft/active/paused/closed/suspended), visibility (public/internal/private), public_reporting |
 | `program_scope` | program_id, target, description, in_scope, severity_guide |
 | `staff_users` | org_id, email, name, global_role |
-| `researchers` | email, name, portfolio links, global status (applicant/active/banned) |
-| `applications` | researcher email, optional program_id, message/portfolio, status (pending/approved/rejected) |
+| `researchers` | email, name, answers to the custom profile fields, global status (applicant/active/banned) |
+| `application_fields` | label, field_type, required, options, help_text, position — super-admin-defined profile/application questions |
+| `applications` | researcher email, optional program_id, answers (snapshot of custom fields), status (pending/approved/rejected) |
 | `notifications` | researcher_id, kind, title, body, invite_id, read_at — in-app inbox |
 | `invites` | program_id, email, token (random, single-use), expires_at, accepted_at |
 | `program_memberships` | researcher_id, program_id — grants access to a program's scope + submission form |
@@ -127,7 +128,7 @@ No cross-researcher visibility (can't see other researchers' reports/comments on
 - Report comments/thread, internal-only staff notes
 - RBAC (global + program roles)
 - Telegram notifications: new application, new report, status change, new comment
-- Researcher profile (email, name, portfolio, global status)
+- Researcher profile (email, name, custom profile fields, global status)
 - Invite-token auth flow
 
 ### MVP-adjacent (staff UX)

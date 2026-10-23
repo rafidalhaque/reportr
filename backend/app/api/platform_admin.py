@@ -9,12 +9,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.programs import get_default_org
 from app.core.guards import require_global
 from app.database import get_session
-from app.models import Notification, Program, ProgramMembership, ProgramRole, Report, Researcher, StaffUser
+from app.models import ApplicationField, Notification, Program, ProgramMembership, ProgramRole, Report, Researcher, StaffUser
 from app.schemas import (
     AdminMembershipAdd,
     AdminMembershipRead,
     AdminResearcherRead,
     AdminResearcherStatus,
+    ApplicationFieldCreate,
+    ApplicationFieldRead,
+    ApplicationFieldUpdate,
     PromoteRequest,
     StaffRead,
 )
@@ -45,7 +48,7 @@ async def list_researchers(
     staff_emails = set((await session.scalars(select(func.lower(StaffUser.email)))).all())
     return [
         AdminResearcherRead(
-            id=r.id, email=r.email, name=r.name, status=r.status, portfolio_url=r.portfolio_url,
+            id=r.id, email=r.email, name=r.name, status=r.status, answers=r.answers or [],
             has_account=bool(r.hashed_password), reports=reports.get(r.id, 0), programs=programs.get(r.id, 0),
             is_staff=r.email.lower() in staff_emails,
         )
@@ -216,3 +219,65 @@ async def set_researcher_status(
     await session.commit()
     rows = await list_researchers(q=researcher.email, status=None, _admin=_admin, session=session)
     return next(r for r in rows if r.id == researcher.id)
+
+
+# --- Researcher application form fields ------------------------------------------
+
+
+@router.get("/application-fields", response_model=list[ApplicationFieldRead])
+async def list_application_fields(
+    _admin: StaffUser = Depends(require_global()), session: AsyncSession = Depends(get_session)
+):
+    return list(
+        (await session.scalars(select(ApplicationField).order_by(ApplicationField.position, ApplicationField.created_at))).all()
+    )
+
+
+@router.post("/application-fields", response_model=ApplicationFieldRead, status_code=201)
+async def create_application_field(
+    payload: ApplicationFieldCreate,
+    _admin: StaffUser = Depends(require_global()),
+    session: AsyncSession = Depends(get_session),
+):
+    last = await session.scalar(select(func.max(ApplicationField.position)))
+    field = ApplicationField(**payload.model_dump(), position=(last if last is not None else -1) + 1)
+    session.add(field)
+    await session.commit()
+    await session.refresh(field)
+    return field
+
+
+@router.patch("/application-fields/{field_id}", response_model=ApplicationFieldRead)
+async def update_application_field(
+    field_id: UUID,
+    payload: ApplicationFieldUpdate,
+    _admin: StaffUser = Depends(require_global()),
+    session: AsyncSession = Depends(get_session),
+):
+    field = await session.get(ApplicationField, field_id)
+    if field is None:
+        raise HTTPException(http.HTTP_404_NOT_FOUND, "Field not found")
+    data = payload.model_dump(exclude_unset=True)
+    if data.get("options") is not None:
+        data["options"] = list(dict.fromkeys(o.strip() for o in data["options"] if o.strip()))
+        if field.field_type != "dropdown":
+            data.pop("options")
+        elif not data["options"]:
+            raise HTTPException(http.HTTP_422_UNPROCESSABLE_ENTITY, "A dropdown needs at least one option")
+    for key, value in data.items():
+        if value is not None:
+            setattr(field, key, value)
+    await session.commit()
+    await session.refresh(field)
+    return field
+
+
+@router.delete("/application-fields/{field_id}", status_code=204)
+async def delete_application_field(
+    field_id: UUID,
+    _admin: StaffUser = Depends(require_global()),
+    session: AsyncSession = Depends(get_session),
+):
+    """Existing applications keep their answers (snapshotted with the label)."""
+    await session.execute(delete(ApplicationField).where(ApplicationField.id == field_id))
+    await session.commit()

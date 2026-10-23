@@ -1,13 +1,20 @@
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 GlobalRole = Literal["super_admin", "org_admin", "staff", "finance", "auditor"]
 ProgramRole = Literal["owner", "triager", "viewer"]
 Severity = Literal["info", "low", "medium", "high", "critical"]
 ReportStatus = Literal["new", "triaging", "duplicate", "informative", "accepted", "resolved"]
+
+
+class ApplicationAnswer(BaseModel):
+    field_id: str
+    label: str
+    field_type: str
+    value: Any
 
 
 # --- Staff & researchers -------------------------------------------------
@@ -39,7 +46,7 @@ class ResearcherRead(BaseModel):
     email: EmailStr
     name: str
     status: str
-    portfolio_url: str | None = None
+    answers: list[ApplicationAnswer] = []
 
 
 class RegisterWithInvite(BaseModel):
@@ -72,7 +79,7 @@ class ProfileRead(BaseModel):
     name: str
     global_role: str | None = None
     researcher_status: str | None = None
-    portfolio_url: str | None = None
+    answers: list[ApplicationAnswer] = []  # researchers: answers to the custom profile fields
     leaderboard_opt_in: bool | None = None
     memberships: list[ProfileMembership]
 
@@ -80,7 +87,7 @@ class ProfileRead(BaseModel):
 class ProfileUpdate(BaseModel):
     leaderboard_opt_in: bool | None = None  # researchers only
     name: str | None = Field(default=None, max_length=200)
-    portfolio_url: str | None = Field(default=None, max_length=500)  # researchers only
+    answers: dict[str, Any] | None = None  # researchers only: {field_id: value} for the custom fields
 
 
 # --- Programs ------------------------------------------------------------
@@ -190,8 +197,7 @@ class ApplicationCreate(BaseModel):
     email: EmailStr
     name: str = ""
     program_id: UUID | None = None
-    message: str = ""
-    portfolio_url: str | None = None
+    answers: dict[str, Any] = Field(default_factory=dict)  # {field_id: value} for the custom fields
 
 
 class ApplicationRead(BaseModel):
@@ -200,9 +206,8 @@ class ApplicationRead(BaseModel):
     email: EmailStr
     name: str
     program_id: UUID | None
-    message: str
-    portfolio_url: str | None
     status: str
+    answers: list[ApplicationAnswer] = []
     created_at: datetime
 
 
@@ -433,7 +438,7 @@ class AdminResearcherRead(BaseModel):
     email: str
     name: str
     status: str
-    portfolio_url: str | None
+    answers: list[ApplicationAnswer]
     has_account: bool  # False for applicants who never activated an invite
     reports: int
     programs: int
@@ -458,3 +463,52 @@ class AdminMembershipAdd(BaseModel):
 
 class AdminResearcherStatus(BaseModel):
     status: Literal["active", "banned"]
+
+
+# --- Custom application form fields (super admin) ----------------------------
+FieldType = Literal["text", "textarea", "dropdown", "checkbox", "url", "number"]
+
+
+def _clean_options(options: list[str]) -> list[str]:
+    seen: list[str] = []
+    for o in options:
+        o = o.strip()
+        if o and o not in seen:
+            seen.append(o)
+    return seen
+
+
+class ApplicationFieldCreate(BaseModel):
+    label: str = Field(min_length=1, max_length=200)
+    field_type: FieldType
+    required: bool = False
+    options: list[str] = Field(default_factory=list, max_length=50)  # dropdown choices
+    help_text: str = Field(default="", max_length=500)
+
+    @model_validator(mode="after")
+    def _check(self):
+        self.options = _clean_options(self.options) if self.field_type == "dropdown" else []
+        if self.field_type == "dropdown" and not self.options:
+            raise ValueError("A dropdown needs at least one option")
+        return self
+
+
+class ApplicationFieldUpdate(BaseModel):
+    """The field type is fixed once created (existing answers depend on it)."""
+
+    label: str | None = Field(default=None, min_length=1, max_length=200)
+    required: bool | None = None
+    options: list[str] | None = Field(default=None, max_length=50)
+    help_text: str | None = Field(default=None, max_length=500)
+    position: int | None = None
+
+
+class ApplicationFieldRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    label: str
+    field_type: str
+    required: bool
+    options: list[str]
+    help_text: str
+    position: int

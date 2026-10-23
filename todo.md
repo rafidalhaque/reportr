@@ -75,7 +75,7 @@ duplicate (14/15) — nothing was dropped.
   Platform settings for super admins; workspace for researchers), slide-over drawer behind
   a top bar on mobile, with theme toggle and sign-out in the sidebar footer.
 - [x] **13. Own profile** — DONE: `/profile` for both account kinds — edit display name
-  (and portfolio URL for researchers) via `GET/PATCH /api/me[/profile]`, plus the program
+  (and custom profile fields for researchers) via `GET/PATCH /api/me[/profile]`, plus the program
   list (staff program roles, researcher memberships). Entry point in the sidebar.
   Email/password changes remain with #14b.
 - [x] **14. Attachments in comments** — DONE: comments accept up to 10 uploaded files

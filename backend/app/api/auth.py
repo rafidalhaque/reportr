@@ -29,6 +29,7 @@ from app.schemas import (
     ResearcherRead,
 )
 from app.config import get_settings
+from app.services.application_fields import form_fields, validate_answers
 from app.services.rate_limit import rate_limit
 
 router = APIRouter(tags=["auth"])
@@ -115,7 +116,7 @@ async def _build_profile(actor, session: AsyncSession) -> ProfileRead:
     ]
     return ProfileRead(
         kind="researcher", id=u.id, email=u.email, name=u.name,
-        researcher_status=u.status, portfolio_url=u.portfolio_url,
+        researcher_status=u.status, answers=u.answers or [],
         leaderboard_opt_in=u.leaderboard_opt_in, memberships=memberships,
     )
 
@@ -129,7 +130,7 @@ async def my_profile(actor=Depends(get_actor), session: AsyncSession = Depends(g
 async def update_me(
     payload: ProfileUpdate, actor=Depends(get_actor), session: AsyncSession = Depends(get_session)
 ):
-    """Edit own profile: name for everyone; portfolio URL and leaderboard opt-in for researchers (todo #13).
+    """Edit own profile: name for everyone; custom profile fields and leaderboard opt-in for researchers (todo #13).
 
     Email and password changes live in /me/email and /me/password (todo #14b).
     """
@@ -137,8 +138,8 @@ async def update_me(
     user = actor.staff if actor.kind == "staff" else actor.researcher
     if data.get("name") is not None:
         user.name = data["name"].strip()
-    if actor.kind == "researcher" and "portfolio_url" in data:
-        user.portfolio_url = data["portfolio_url"] or None
+    if actor.kind == "researcher" and data.get("answers") is not None:
+        user.answers = validate_answers(await form_fields(session), data["answers"], enforce_required=False)
     if actor.kind == "researcher" and data.get("leaderboard_opt_in") is not None:
         user.leaderboard_opt_in = data["leaderboard_opt_in"]
     await session.commit()

@@ -111,8 +111,9 @@ Errors: `404` unknown slug · `403` public reporting disabled · `400` program n
 
 ### `POST /api/public/applications` — apply to join
 
-Application to become a researcher. Requires `email`; optionally `name`, `message`,
-`portfolio_url`, `program_id` (must be a public, active program). Returns the created
+Application to become a researcher. Requires `email`; optionally `name`,
+`program_id` (must be a public, active program), and `answers` (an object of `{field_id: value}` for the custom
+fields returned by `GET /api/public/application-fields`; required fields are enforced with `422`). Returns the created
 application (`201`). Rejected with `403` when the super admin has disabled the
 researcher application form platform-wide, or when the email is banned, and with `400` when
 `program_id` is not a public, active program.

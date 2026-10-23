@@ -398,7 +398,7 @@ function EmailTemplatesPanel() {
           <code>{"{{old_status}}"}</code>, <code>{"{{new_status}}"}</code>,{" "}
           <code>{"{{author}}"}</code>, <code>{"{{author_kind}}"}</code>, <code>{"{{internal}}"}</code>,{" "}
           <code>{"{{comment}}"}</code>, <code>{"{{email}}"}</code>, <code>{"{{for_program}}"}</code>,{" "}
-          <code>{"{{message}}"}</code>, <code>{"{{portfolio}}"}</code>, <code>{"{{expires}}"}</code>,{" "}
+          <code>{"{{expires}}"}</code>,{" "}
           <code>{"{{link}}"}</code>.
           Use the preview to see which apply. Templates apply to notification emails and
           Telegram texts.

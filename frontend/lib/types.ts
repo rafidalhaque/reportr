@@ -76,13 +76,29 @@ export interface InviteInfo {
   email_masked?: string | null;
 }
 
+export interface ApplicationAnswer {
+  field_id: string;
+  label: string;
+  field_type: string;
+  value: string | number | boolean | null;
+}
+
+export interface ApplicationField {
+  id: string;
+  label: string;
+  field_type: "text" | "textarea" | "dropdown" | "checkbox" | "url" | "number";
+  required: boolean;
+  options: string[];
+  help_text: string;
+  position: number;
+}
+
 export interface Application {
+  answers?: ApplicationAnswer[];
   id: string;
   email: string;
   name: string;
   program_id: string | null;
-  message: string;
-  portfolio_url: string | null;
   status: string;
   created_at: string;
 }
@@ -100,7 +116,7 @@ export interface Researcher {
   email: string;
   name: string;
   status: string;
-  portfolio_url?: string | null;
+  answers?: ApplicationAnswer[];
 }
 
 export interface ProgramRoleEntry {
@@ -199,7 +215,7 @@ export interface Profile {
   name: string;
   global_role?: string | null;
   researcher_status?: string | null;
-  portfolio_url?: string | null;
+  answers?: ApplicationAnswer[];
   leaderboard_opt_in?: boolean | null;
   memberships: ProfileMembership[];
 }

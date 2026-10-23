@@ -48,6 +48,7 @@ import {
   SeverityBadge,
   VisibilityBadge,
 } from "@/components/badges";
+import { AnswersList } from "@/components/answers";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1560,23 +1561,9 @@ function ApplicationsTab({ programId }: { programId: string }) {
                   </div>
                 </div>
               </CardHeader>
-              {(app.message || app.portfolio_url) && (
-                <CardContent className="space-y-2">
-                  {app.message && (
-                    <p className="whitespace-pre-wrap rounded-md bg-slate-50 dark:bg-slate-800/60 p-3 text-sm text-slate-700 dark:text-slate-300">
-                      {app.message}
-                    </p>
-                  )}
-                  {app.portfolio_url && (
-                    <a
-                      href={app.portfolio_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-block text-sm font-medium text-indigo-600 hover:underline"
-                    >
-                      {app.portfolio_url}
-                    </a>
-                  )}
+              {(app.answers?.length ?? 0) > 0 && (
+                <CardContent>
+                  <AnswersList answers={app.answers} />
                 </CardContent>
               )}
             </Card>

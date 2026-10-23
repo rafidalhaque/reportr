@@ -5,17 +5,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { apiGet, apiPatch, apiPost, errMessage } from "@/lib/api";
-import type { Profile } from "@/lib/types";
+import type { ApplicationField, Profile } from "@/lib/types";
 import { fmtDate } from "@/lib/utils";
 import { resetMe, useMe } from "@/components/auth";
 import { AppShell, FullPageLoader } from "@/components/shell";
+import { FieldInputs, answersToMap, type AnswerMap } from "@/components/application-fields";
 import { ErrorAlert, InfoAlert, SuccessAlert } from "@/components/alerts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-/** Own profile (todo #13): view + edit name (and portfolio for researchers),
+/** Own profile (todo #13): view + edit name (and the custom profile fields for researchers),
  * see role and program memberships. Email/password changes come with todo #14b. */
 export default function ProfilePage() {
   const { me, loading } = useMe();
@@ -32,7 +33,8 @@ export default function ProfilePage() {
 function ProfileBody({ me }: { me: NonNullable<ReturnType<typeof useMe>["me"]> }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [name, setName] = useState("");
-  const [portfolioUrl, setPortfolioUrl] = useState("");
+  const [fields, setFields] = useState<ApplicationField[]>([]);
+  const [answers, setAnswers] = useState<AnswerMap>({});
   const [optIn, setOptIn] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -44,7 +46,10 @@ function ProfileBody({ me }: { me: NonNullable<ReturnType<typeof useMe>["me"]> }
       .then((p) => {
         setProfile(p);
         setName(p.name);
-        setPortfolioUrl(p.portfolio_url ?? "");
+        setAnswers(answersToMap(p.answers));
+        if (p.kind === "researcher") {
+          apiGet<ApplicationField[]>("/public/application-fields").then(setFields).catch(() => setFields([]));
+        }
         setOptIn(p.leaderboard_opt_in ?? true);
       })
       .catch((e) => setLoadError(errMessage(e)));
@@ -58,7 +63,7 @@ function ProfileBody({ me }: { me: NonNullable<ReturnType<typeof useMe>["me"]> }
     try {
       const updated = await apiPatch<Profile>("/me", {
         name,
-        portfolio_url: profile?.kind === "researcher" ? portfolioUrl : undefined,
+        answers: profile?.kind === "researcher" ? answers : undefined,
         leaderboard_opt_in: profile?.kind === "researcher" ? optIn : undefined,
       });
       setProfile(updated);
@@ -119,17 +124,7 @@ function ProfileBody({ me }: { me: NonNullable<ReturnType<typeof useMe>["me"]> }
                 </div>
 
                 {isResearcher && (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="profile-portfolio">Portfolio URL</Label>
-                    <Input
-                      id="profile-portfolio"
-                      type="url"
-                      maxLength={500}
-                      value={portfolioUrl}
-                      onChange={(e) => setPortfolioUrl(e.target.value)}
-                      placeholder="https://github.com/you or your blog"
-                    />
-                  </div>
+                  <FieldInputs fields={fields} answers={answers} onChange={setAnswers} requireFields={false} />
                 )}
 
                 {isResearcher && (

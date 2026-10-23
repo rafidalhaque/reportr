@@ -41,6 +41,7 @@ APPLICATION_STATUSES = ("pending", "approved", "rejected")
 REPORT_STATUSES = ("new", "triaging", "duplicate", "informative", "accepted", "resolved")
 # Researcher may edit own report until triage moves it past these
 REPORT_EDITABLE_STATUSES = ("new", "triaging")
+APPLICATION_FIELD_TYPES = ("text", "textarea", "dropdown", "checkbox", "url", "number")
 SEVERITIES = ("info", "low", "medium", "high", "critical")
 # Leaderboard scoring: accepted/resolved reports earn points by severity
 SCORED_STATUSES = ("accepted", "resolved")

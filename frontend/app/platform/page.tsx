@@ -3,7 +3,8 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { apiDelete, apiGet, apiPatch, apiPost, errMessage } from "@/lib/api";
 import { fmtDate, titleCase } from "@/lib/utils";
-import type { Application, Program } from "@/lib/types";
+import type { Application, ApplicationAnswer, ApplicationField, Program } from "@/lib/types";
+import { AnswersList } from "@/components/answers";
 import { useMe } from "@/components/auth";
 import { AppShell, FullPageLoader } from "@/components/shell";
 import { ErrorAlert, SuccessAlert } from "@/components/alerts";
@@ -12,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -20,7 +22,7 @@ interface AdminResearcher {
   email: string;
   name: string;
   status: string;
-  portfolio_url: string | null;
+  answers: ApplicationAnswer[];
   has_account: boolean;
   reports: number;
   programs: number;
@@ -108,6 +110,12 @@ function ManagePanel({
   return (
     <div className="space-y-4 p-4">
       {error && <ErrorAlert>{error}</ErrorAlert>}
+      {researcher.answers.length > 0 && (
+        <div>
+          <div className="text-xs font-medium uppercase tracking-wide text-slate-500">Profile</div>
+          <AnswersList answers={researcher.answers} />
+        </div>
+      )}
       <div>
         <div className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">Programs</div>
         {memberships && memberships.length === 0 && (
@@ -281,6 +289,164 @@ function ResearchersPanel({ programs, onNotice }: { programs: Program[]; onNotic
   );
 }
 
+const FIELD_TYPES = ["text", "textarea", "dropdown", "checkbox", "url", "number"] as const;
+
+/** Super admin: define the extra questions on the researcher application form. */
+function FormFieldsPanel() {
+  const [fields, setFields] = useState<ApplicationField[] | null>(null);
+  const [error, setError] = useState("");
+  const [label, setLabel] = useState("");
+  const [fieldType, setFieldType] = useState<(typeof FIELD_TYPES)[number]>("text");
+  const [required, setRequired] = useState(false);
+  const [options, setOptions] = useState("");
+  const [helpText, setHelpText] = useState("");
+
+  const load = useCallback(() => {
+    apiGet<ApplicationField[]>("/admin/application-fields")
+      .then(setFields)
+      .catch((e) => setError(errMessage(e)));
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function run(fn: () => Promise<unknown>) {
+    setError("");
+    try {
+      await fn();
+      load();
+    } catch (err) {
+      setError(errMessage(err));
+    }
+  }
+
+  async function add(event: React.FormEvent) {
+    event.preventDefault();
+    await run(async () => {
+      await apiPost("/admin/application-fields", {
+        label,
+        field_type: fieldType,
+        required,
+        options: fieldType === "dropdown" ? options.split("\n") : [],
+        help_text: helpText,
+      });
+      setLabel("");
+      setOptions("");
+      setHelpText("");
+      setRequired(false);
+    });
+  }
+
+  function move(index: number, delta: number) {
+    const a = fields?.[index];
+    const b = fields?.[index + delta];
+    if (!a || !b) return;
+    run(async () => {
+      // swap positions (use indexes so equal/legacy positions still reorder)
+      await apiPatch(`/admin/application-fields/${a.id}`, { position: index + delta });
+      await apiPatch(`/admin/application-fields/${b.id}`, { position: index });
+    });
+  }
+
+  return (
+    <div className="space-y-4">
+      {error && <ErrorAlert>{error}</ErrorAlert>}
+      <Card>
+        <CardContent className="p-4">
+          <form onSubmit={add} className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Label</label>
+              <Input required maxLength={200} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Years of experience" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Type</label>
+              <Select value={fieldType} onChange={(e) => setFieldType(e.target.value as (typeof FIELD_TYPES)[number])}>
+                {FIELD_TYPES.map((t) => (
+                  <option key={t} value={t}>{titleCase(t)}</option>
+                ))}
+              </Select>
+            </div>
+            {fieldType === "dropdown" && (
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-sm font-medium">Options (one per line)</label>
+                <Textarea rows={3} required value={options} onChange={(e) => setOptions(e.target.value)} />
+              </div>
+            )}
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="text-sm font-medium">Help text (optional)</label>
+              <Input maxLength={500} value={helpText} onChange={(e) => setHelpText(e.target.value)} />
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={required} onChange={(e) => setRequired(e.target.checked)} />
+              Required
+            </label>
+            <div className="sm:text-right">
+              <Button type="submit">Add field</Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        {fields && fields.length === 0 ? (
+          <CardContent className="p-8 text-center text-sm text-slate-500">
+            No custom fields. The application form only asks for the standard details.
+          </CardContent>
+        ) : (
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+            {fields?.map((f, i) => (
+              <li key={f.id} className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm">
+                <div className="min-w-0">
+                  <div className="font-medium">
+                    {f.label} {f.required && <span className="text-red-600">*</span>}
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    {titleCase(f.field_type)}
+                    {f.field_type === "dropdown" && ` · ${f.options.join(", ")}`}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button size="sm" variant="ghost" disabled={i === 0} onClick={() => move(i, -1)} aria-label="Move up">↑</Button>
+                  <Button size="sm" variant="ghost" disabled={i === (fields?.length ?? 0) - 1} onClick={() => move(i, 1)} aria-label="Move down">↓</Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => run(() => apiPatch(`/admin/application-fields/${f.id}`, { required: !f.required }))}
+                  >
+                    {f.required ? "Make optional" : "Make required"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const next = window.prompt("Field label", f.label);
+                      if (next && next.trim()) run(() => apiPatch(`/admin/application-fields/${f.id}`, { label: next.trim() }));
+                    }}
+                  >
+                    Rename
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      if (window.confirm(`Delete "${f.label}"? Existing answers are kept.`)) {
+                        run(() => apiDelete(`/admin/application-fields/${f.id}`));
+                      }
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+    </div>
+  );
+}
+
 function ApplicationsPanel({ programs, onNotice }: { programs: Program[]; onNotice: (m: string) => void }) {
   const [apps, setApps] = useState<Application[] | null>(null);
   const [filter, setFilter] = useState("pending");
@@ -339,7 +505,7 @@ function ApplicationsPanel({ programs, onNotice }: { programs: Program[]; onNoti
                   <TableCell>
                     <div className="font-medium">{a.name || a.email}</div>
                     <div className="text-xs text-slate-500 dark:text-slate-400">{a.email}</div>
-                    {a.message && <div className="mt-1 max-w-sm text-xs">{a.message}</div>}
+                    <AnswersList answers={a.answers} />
                   </TableCell>
                   <TableCell>
                     {a.program_id ? (
@@ -383,7 +549,7 @@ function ApplicationsPanel({ programs, onNotice }: { programs: Program[]; onNoti
 
 export default function PlatformPeoplePage() {
   const { me, loading } = useMe("staff");
-  const [tab, setTab] = useState<"researchers" | "applications">("researchers");
+  const [tab, setTab] = useState<"researchers" | "applications" | "form">("researchers");
   const [programs, setPrograms] = useState<Program[]>([]);
   const [notice, setNotice] = useState("");
 
@@ -412,7 +578,7 @@ export default function PlatformPeoplePage() {
           </p>
         </div>
         <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800">
-          {(["researchers", "applications"] as const).map((t) => (
+          {(["researchers", "applications", "form"] as const).map((t) => (
             <button
               key={t}
               type="button"
@@ -421,15 +587,17 @@ export default function PlatformPeoplePage() {
                 tab === t ? "border-indigo-600 text-indigo-700 dark:text-indigo-300" : "border-transparent text-slate-500"
               }`}
             >
-              {t}
+              {t === "form" ? "Application form" : t}
             </button>
           ))}
         </div>
         {notice && <SuccessAlert>{notice}</SuccessAlert>}
         {tab === "researchers" ? (
           <ResearchersPanel programs={programs} onNotice={setNotice} />
-        ) : (
+        ) : tab === "applications" ? (
           <ApplicationsPanel programs={programs} onNotice={setNotice} />
+        ) : (
+          <FormFieldsPanel />
         )}
       </main>
     </AppShell>

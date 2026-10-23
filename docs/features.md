@@ -27,8 +27,8 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
   password changes again) emailed via platform SMTP; no account enumeration (202 for known
   and unknown emails alike); rate-limited 5/h per IP. Pages: `/forgot-password`,
   `/reset-password`.
-- ✅ **Own profile** (`/profile`, both kinds) — edit display name (and portfolio URL for
-  researchers), see role/status and all program memberships with roles and join dates.
+- ✅ **Own profile** (`/profile`, both kinds) — edit display name (and, for researchers,
+  their answers to the custom profile fields), see role/status and all program memberships with roles and join dates.
 - ✅ **First super admin via seed** — `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`, idempotent
   across restarts.
 
@@ -61,6 +61,22 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
   (`POST …/memberships`, the researcher is told in their inbox) or send a normal invite, so
   someone removed from one program can be placed in another. Also ban / reinstate
   (`PATCH /api/admin/researchers/{id}`).
+
+## Custom application form fields (super admin)
+
+- ✅ **Configurable application questions** — on `/platform` → *Application form*, a super admin
+  adds fields to the researcher application form (`/api/admin/application-fields`): type
+  (`text`, `textarea`, `dropdown`, `checkbox`, `url`, `number`), label, help text, dropdown
+  options and a **required** flag; fields can be reordered, renamed, toggled required or deleted
+  (type is fixed after creation).
+- ✅ **Rendered and validated** — `/apply` shows them (`GET /api/public/application-fields`);
+  the submission is validated server-side (required, allowed option, number, http(s) URL, length)
+  and rejected with 422 naming the field. Answers are stored on the application as a snapshot
+  with the field label, so deleting a field never loses past answers. They also fill the
+  applicant's **researcher profile** (editable later on `/profile`, never overwritten by a new
+  application once the account is active; unanswered required fields don't block profile saves),
+  and are shown to
+  reviewers on the program Applications tab and the platform Applications tab.
 
 ## Roles & permissions (RBAC)
 
@@ -199,7 +215,7 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
 
 ## Developer experience & infrastructure
 
-- ✅ **FastAPI + SQLAlchemy 2.0 (async) + Alembic** — 8 ordered, up/down-verified
+- ✅ **FastAPI + SQLAlchemy 2.0 (async) + Alembic** — 10 ordered, up/down-verified
   migrations; Postgres in production, in-memory SQLite for the test suite.
 - ✅ **uv dependency management** — `pyproject.toml` + committed `uv.lock`;
   `uv sync` / `uv run`; Docker installs from the lockfile (`--frozen --no-dev`).
@@ -210,7 +226,7 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
   backend and everything else to the frontend.
 - ✅ **Idempotent seed** — default org, super admin, demo program with example scope,
   platform settings, email templates.
-- ✅ **Test suite** — 41 tests on in-memory SQLite: end-to-end API flows (invites, reports,
+- ✅ **Test suite** — 43 tests on in-memory SQLite: end-to-end API flows (invites, reports,
   triage, RBAC, public forms, applications), email-stack tests with captured delivery, the
   CWE catalog sync check, and a static AST guard against Python 3.12/3.14 annotation-order
   drift.
