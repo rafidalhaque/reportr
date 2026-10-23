@@ -105,14 +105,14 @@ export default function ProgramPage() {
 
   const isOrgAdmin = me.global_role === "super_admin" || me.global_role === "org_admin";
 
-  const canManageInvites = isOrgAdmin || programRole === "owner";
+  const canManageProgram = isOrgAdmin || programRole === "owner";
   // Internal programs are readable by all staff, but reports need view access (global or program role).
   const canViewReports = isOrgAdmin || me.global_role === "auditor" || programRole !== null;
 
   const tabs: { key: TabKey; label: string }[] = [
     ...(canViewReports ? [{ key: "reports" as TabKey, label: "Reports" }] : []),
     { key: "scope", label: "Scope" },
-    ...(canManageInvites
+    ...(canManageProgram
       ? [
           { key: "invites" as TabKey, label: "Invites" },
           { key: "members" as TabKey, label: "Members" },
@@ -120,8 +120,13 @@ export default function ProgramPage() {
         ]
       : []),
     ...(isOrgAdmin ? [{ key: "roles" as TabKey, label: "Roles" }] : []),
-    { key: "settings", label: "Settings" },
-    { key: "api", label: "Public API" },
+    // Settings and Public API need manage-scope (org admin / program owner)
+    ...(canManageProgram
+      ? [
+          { key: "settings" as TabKey, label: "Settings" },
+          { key: "api" as TabKey, label: "Public API" },
+        ]
+      : []),
   ];
   const active = tabs.some((t) => t.key === tab) ? tab : tabs[0].key;
 
@@ -170,7 +175,7 @@ export default function ProgramPage() {
             </div>
 
             {active === "reports" && <ReportsTab programId={programId} />}
-            {active === "scope" && <ScopeTab programId={programId} />}
+            {active === "scope" && <ScopeTab programId={programId} canEdit={canManageProgram} />}
             {active === "invites" && <InvitesTab programId={programId} />}
             {active === "members" && <MembersTab programId={programId} />}
             {active === "applications" && <ApplicationsTab programId={programId} />}
@@ -386,7 +391,7 @@ function ReportsTab({ programId }: { programId: string }) {
 
 /* ------------------------------- Scope tab ------------------------------- */
 
-function ScopeTab({ programId }: { programId: string }) {
+function ScopeTab({ programId, canEdit }: { programId: string; canEdit: boolean }) {
   const [entries, setEntries] = useState<ScopeEntry[] | null>(null);
   const [error, setError] = useState("");
 
@@ -493,11 +498,12 @@ function ScopeTab({ programId }: { programId: string }) {
     <div className="space-y-6">
       <InfoAlert>
         Structured scope items shown to researchers (and merged with the free-form scope
-        markdown in Settings). Adding and editing requires the manage-scope permission — the
-        API will reject changes otherwise.
+        markdown in Settings).
+        {canEdit ? "" : " You have read-only access; editing needs an owner or org admin."}
       </InfoAlert>
 
       <div className="grid gap-6 lg:grid-cols-3">
+        {canEdit && (
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle>{editingId ? "Edit scope entry" : "Add scope entry"}</CardTitle>
@@ -571,8 +577,9 @@ function ScopeTab({ programId }: { programId: string }) {
             </form>
           </CardContent>
         </Card>
+        )}
 
-        <Card className="lg:col-span-2">
+        <Card className={canEdit ? "lg:col-span-2" : "lg:col-span-3"}>
           <CardHeader>
             <CardTitle>Scope entries</CardTitle>
             <CardDescription>
@@ -583,7 +590,7 @@ function ScopeTab({ programId }: { programId: string }) {
             {error && <ErrorAlert>{error}</ErrorAlert>}
             {entries && entries.length === 0 && (
               <p className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
-                No structured scope entries yet — add one or import a CSV.
+                No structured scope entries yet{canEdit ? " — add one or import a CSV." : "."}
               </p>
             )}
             {entries && entries.length > 0 && (
@@ -594,7 +601,7 @@ function ScopeTab({ programId }: { programId: string }) {
                     <TableHead>Scope</TableHead>
                     <TableHead>Severity guide</TableHead>
                     <TableHead>Description</TableHead>
-                    <TableHead />
+                    {canEdit && <TableHead />}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -614,6 +621,7 @@ function ScopeTab({ programId }: { programId: string }) {
                       <TableCell className="max-w-xs truncate text-slate-600 dark:text-slate-300" title={entry.description}>
                         {entry.description || "—"}
                       </TableCell>
+                      {canEdit && (
                       <TableCell className="whitespace-nowrap text-right">
                         <button
                           type="button"
@@ -630,6 +638,7 @@ function ScopeTab({ programId }: { programId: string }) {
                           Delete
                         </button>
                       </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -645,6 +654,7 @@ function ScopeTab({ programId }: { programId: string }) {
         </Card>
       </div>
 
+      {canEdit && (
       <Card>
         <CardHeader>
           <CardTitle>Import scope from CSV</CardTitle>
@@ -684,6 +694,7 @@ function ScopeTab({ programId }: { programId: string }) {
           )}
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }

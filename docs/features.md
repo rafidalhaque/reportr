@@ -83,6 +83,9 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
   (public / internal / private).
 - ✅ **Public report form toggle** — per program, on the Settings tab with a copyable form
   link; the form only accepts submissions while the program is active.
+- ✅ **Role-aware program tabs** — triagers and viewers see Reports and a read-only Scope tab;
+  Invites, Members, Applications, Settings and Public API show only for org admins and program
+  owners (the API enforces the same).
 - ✅ **Program dashboard stats** — total reports, breakdown by status, pending
   applications, member count.
 - ✅ **Role-filtered program listing** — org-level roles see all programs; ordinary staff
