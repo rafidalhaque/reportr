@@ -629,7 +629,7 @@ async def test_internal_visibility(admin_client, plain_client, client, make_clie
     assert (await plain_client.get(f"/api/programs/{private['id']}")).status_code == 403
     assert (await plain_client.get(f"/api/programs/{pid}/stats")).status_code == 403
 
-    # a non-member researcher can view it but not submit
+    # a non-member researcher can view it and, like on a public program, submit to it
     invite = (await admin_client.post(
         f"/api/programs/{client.ids['program_id']}/invites", json={"email": "int@test.com"}
     )).json()
@@ -641,7 +641,8 @@ async def test_internal_visibility(admin_client, plain_client, client, make_clie
     assert (await researcher.get(f"/api/programs/{pid}/scope")).status_code == 200
     assert (await researcher.get(f"/api/programs/{private['id']}")).status_code == 404
     submit = await researcher.post("/api/reports", json={"program_id": pid, "title": "x"})
-    assert submit.status_code == 403
+    assert submit.status_code == 201
+    assert (await researcher.get(f"/api/reports/{submit.json()['id']}")).status_code == 200
 
     # never on public pages
     anon = await make_client()

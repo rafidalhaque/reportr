@@ -154,7 +154,7 @@ async def list_reports(
 async def create_report(
     payload: ReportCreate, actor=Depends(get_actor), session: AsyncSession = Depends(get_session)
 ):
-    """Researcher submission — membership-gated (spec §4 researcher permissions)."""
+    """Researcher submission — membership-gated, except internal programs which any logged-in researcher may report to."""
     if actor.kind != "researcher":
         raise HTTPException(403, "Only researchers can submit reports")
     researcher = actor.researcher
@@ -170,7 +170,7 @@ async def create_report(
             ProgramMembership.program_id == program.id,
         )
     )
-    if membership is None:
+    if membership is None and program.visibility != "internal":  # internal = open to any logged-in researcher
         raise HTTPException(403, "You are not a member of this program")
     if program.status != "active":
         raise HTTPException(400, "This program is not accepting reports right now")

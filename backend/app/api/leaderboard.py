@@ -70,7 +70,8 @@ async def leaderboard(
                     ProgramMembership.program_id == program_id,
                 )
             )
-            if member is None:
+            program = await session.get(Program, program_id)
+            if program is None or (member is None and program.visibility != "internal"):
                 raise HTTPException(404, "Program not found")
         elif not await has_program_perm(session, actor.staff, program_id, ACTION_VIEW_REPORTS):
             raise HTTPException(403, "Insufficient permissions for this program")

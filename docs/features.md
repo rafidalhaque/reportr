@@ -87,9 +87,11 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
   applications, member count.
 - ✅ **Role-filtered program listing** — org-level roles see all programs; ordinary staff
   see only programs they hold a role on; researchers see their memberships.
-- ✅ **Internal visibility** — `internal` programs are readable (details + scope) by any
-  logged-in researcher or staff member, never listed publicly; reports, invites and
-  stats stay role-gated and submission still needs membership.
+- ✅ **Internal visibility** — `internal` programs behave like public ones for logged-in
+  users only: any logged-in researcher can read the program and scope, submit reports
+  (no membership or invite needed) and see its leaderboard; any staff member can read it
+  (reports, invites and stats stay role-gated). Never listed publicly. `private` programs
+  stay invite-only from the program.
 - ✅ **Public API documentation tab** — per-program view of the public endpoints with live
   URLs, copy-ready `curl` examples, response samples, rate-limit and error-contract notes.
 - ✅ **`org_id` forward compatibility** — every domain table carries the column for the
