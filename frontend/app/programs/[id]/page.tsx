@@ -1980,10 +1980,6 @@ function SettingsTab({
         </ErrorAlert>
       )}
 
-      <PublicReportingCard program={program} onSaved={onSaved} />
-      <ProgramEmailCard programId={program.id} />
-      {me.global_role === "super_admin" && <DangerZoneCard program={program} onSaved={onSaved} />}
-
       <form onSubmit={onSubmit} className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -2103,6 +2099,10 @@ function SettingsTab({
           </CardContent>
         </Card>
       </form>
+
+      <PublicReportingCard program={program} onSaved={onSaved} />
+      <ProgramEmailCard programId={program.id} />
+      {me.global_role === "super_admin" && <DangerZoneCard program={program} onSaved={onSaved} />}
     </div>
   );
 }
