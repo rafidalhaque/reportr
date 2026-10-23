@@ -276,7 +276,7 @@ function PlatformEmailPanel() {
                   onChange={(e) => set("smtp_use_tls", e.target.checked)}
                   className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                 />
-                Use STARTTLS
+                Use TLS (STARTTLS; port 465 uses implicit TLS)
               </label>
             </div>
 
@@ -398,7 +398,8 @@ function EmailTemplatesPanel() {
           <code>{"{{old_status}}"}</code>, <code>{"{{new_status}}"}</code>,{" "}
           <code>{"{{author}}"}</code>, <code>{"{{author_kind}}"}</code>, <code>{"{{internal}}"}</code>,{" "}
           <code>{"{{comment}}"}</code>, <code>{"{{email}}"}</code>, <code>{"{{for_program}}"}</code>,{" "}
-          <code>{"{{message}}"}</code>, <code>{"{{portfolio}}"}</code>, <code>{"{{expires}}"}</code>.
+          <code>{"{{message}}"}</code>, <code>{"{{portfolio}}"}</code>, <code>{"{{expires}}"}</code>,{" "}
+          <code>{"{{link}}"}</code>.
           Use the preview to see which apply. Templates apply to notification emails and
           Telegram texts.
         </CardDescription>

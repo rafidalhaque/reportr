@@ -39,6 +39,11 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
   drops an in-app notification (plus an email when platform SMTP is on). Researchers see an
   unread badge, and accept/decline from `/researcher/notifications`
   (`GET /api/me/notifications`, `POST /api/me/invites/{id}/accept|decline`). Decline revokes.
+- ✅ **Invite emails to the invitee** — every invite (direct or from an approved application) is
+  emailed to the invited address when platform SMTP is on: an activation link for people without
+  an account, a pointer to the inbox for existing ones. Both are editable templates
+  (`invite_new`, `invite_existing`, with `{{link}}`, `{{program}}`, `{{expires}}`). SMTP port 465
+  uses implicit TLS.
 
 ## Platform directory (super admin)
 
@@ -162,7 +167,7 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
 - ✅ **Program SMTP override** — a program can send its own notifications through its own
   server (resolution: program → platform).
 - ✅ **Editable email templates** — one template per event (new report, status change, new
-  comment, new application, application approved, invite created) with `{{placeholder}}`
+  comment, new application, application approved, invite created, plus the two invitee emails) with `{{placeholder}}`
   rendering; super admins edit, preview with sample context, reset to defaults, and
   test-send. Templates drive both emails and Telegram texts.
 - ✅ **Transactional account emails** — password reset and email-change verification links
@@ -190,7 +195,7 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
   backend and everything else to the frontend.
 - ✅ **Idempotent seed** — default org, super admin, demo program with example scope,
   platform settings, email templates.
-- ✅ **Test suite** — 38 tests on in-memory SQLite: end-to-end API flows (invites, reports,
+- ✅ **Test suite** — 40 tests on in-memory SQLite: end-to-end API flows (invites, reports,
   triage, RBAC, public forms, applications), email-stack tests with captured delivery, the
   CWE catalog sync check, and a static AST guard against Python 3.12/3.14 annotation-order
   drift.

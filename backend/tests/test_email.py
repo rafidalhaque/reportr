@@ -195,3 +195,44 @@ async def test_template_test_send_requires_platform_smtp(admin_client, client):
         assert "ABCD1234" in sent[0][1]
     finally:
         email_admin._deliver_email = notif._deliver_email
+
+
+async def test_approved_applicant_receives_invite_email(admin_client, client, make_client, monkeypatch):
+    from app.services import inbox
+
+    sent = []
+
+    async def fake_send(session, recipient, subject, body):
+        sent.append((recipient, subject, body))
+        return True
+
+    monkeypatch.setattr(inbox, "send_user_email", fake_send)
+    program_id = client.ids["program_id"]
+    anon = await make_client()
+    app_id = (await anon.post("/api/public/applications", json={"email": "new@test.com", "program_id": program_id})).json()["id"]
+    invite = (await admin_client.post(f"/api/applications/{app_id}/approve", json={})).json()
+    assert [s[0] for s in sent] == ["new@test.com"]
+    assert f"/invite/{invite['token']}" in sent[0][2]  # activation link for someone without an account
+
+
+async def test_invite_email_uses_editable_template(admin_client, client, make_client, monkeypatch):
+    from app.services import inbox
+
+    sent = []
+
+    async def fake_send(session, recipient, subject, body):
+        sent.append((recipient, subject, body))
+        return True
+
+    monkeypatch.setattr(inbox, "send_user_email", fake_send)
+    edited = await admin_client.put(
+        "/api/settings/email-templates/invite_new",
+        json={"subject": "Join {{program}}!", "body": "Hi {{email}}: {{link}}"},
+    )
+    assert edited.status_code == 200, edited.text
+    program_id = client.ids["program_id"]
+    invite = (await admin_client.post(f"/api/programs/{program_id}/invites", json={"email": "tpl@test.com"})).json()
+    assert sent[-1][1] == "Join Test Program!"
+    assert sent[-1][2] == f"Hi tpl@test.com: http://localhost:3000/invite/{invite['token']}"
+    names = [t["name"] for t in (await admin_client.get("/api/settings/email-templates")).json()]
+    assert {"invite_new", "invite_existing"} <= set(names)

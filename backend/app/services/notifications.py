@@ -74,6 +74,22 @@ DEFAULT_TEMPLATES: dict[str, dict[str, str]] = {
         "subject": "Invite created — {{program}}",
         "body": "An invite for {{email}} to {{program}} was created. It expires on {{expires}}.",
     },
+    # Sent to the invitee (not the triage inbox)
+    "invite_new": {
+        "subject": "You're invited to {{program}}",
+        "body": (
+            "You've been invited to join {{program}}.\n"
+            "Create your account and accept the invite here: {{link}}\n"
+            "The link expires on {{expires}}."
+        ),
+    },
+    "invite_existing": {
+        "subject": "You're invited to {{program}}",
+        "body": (
+            "You've been invited to join {{program}}.\n"
+            "Sign in and open your notifications to accept: {{link}}"
+        ),
+    },
 }
 
 EVENT_LABELS: dict[str, str] = {
@@ -83,6 +99,8 @@ EVENT_LABELS: dict[str, str] = {
     "new_application": "New application",
     "application_approved": "Application approved",
     "invite_created": "Invite created",
+    "invite_new": "Invitee email (no account yet)",
+    "invite_existing": "Invitee email (existing account)",
 }
 
 SAMPLE_CONTEXT: dict[str, dict[str, str]] = {
@@ -99,6 +117,10 @@ SAMPLE_CONTEXT: dict[str, dict[str, str]] = {
                         "message": "Sample message.", "portfolio": "https://jane.example.com"},
     "application_approved": {"email": "jane@example.com", "program": "Sample Program", "expires": "2026-09-30"},
     "invite_created": {"email": "jane@example.com", "program": "Sample Program", "expires": "2026-09-30"},
+    "invite_new": {"email": "jane@example.com", "program": "Sample Program", "expires": "2026-09-30",
+                   "link": "https://reportr.example.com/invite/0123abcd"},
+    "invite_existing": {"email": "jane@example.com", "program": "Sample Program", "expires": "2026-09-30",
+                        "link": "https://reportr.example.com/researcher/notifications"},
 }
 
 
@@ -219,8 +241,11 @@ def _deliver_email_sync(config: EmailConfig, subject: str, body: str) -> None:
     msg["To"] = config.notify_email
     msg["Subject"] = subject
     msg.set_content(body)
-    with smtplib.SMTP(config.host, config.port, timeout=15) as smtp:
-        if config.use_tls:
+    # Port 465 is implicit TLS (SMTPS); everything else upgrades with STARTTLS when enabled.
+    implicit_tls = config.port == 465
+    smtp_cls = smtplib.SMTP_SSL if implicit_tls else smtplib.SMTP
+    with smtp_cls(config.host, config.port, timeout=15) as smtp:
+        if config.use_tls and not implicit_tls:
             smtp.starttls(context=ssl.create_default_context())
         if config.username:
             smtp.login(config.username, config.password or "")
@@ -233,6 +258,15 @@ async def _deliver_email(config: EmailConfig, subject: str, body: str) -> None:
 
 # --- Entry point ----------------------------------------------------------
 
+async def render_event(session: AsyncSession, event: str, context: dict) -> tuple[str, str]:
+    """Render an event through its (possibly super-admin-edited) template, else the code default."""
+    defaults = DEFAULT_TEMPLATES.get(event) or {}
+    template = await session.scalar(select(EmailTemplate).where(EmailTemplate.name == event))
+    subject = template.subject if template else defaults.get("subject", event)
+    body = template.body if template else defaults.get("body", "")
+    return render_template(subject, context), render_template(body, context)
+
+
 async def send_notification(
     session: AsyncSession, event: str, program_id: UUID | None, context: dict
 ) -> None:
@@ -241,10 +275,7 @@ async def send_notification(
     Never raises: notification failures must not break the API request.
     """
     try:
-        defaults = DEFAULT_TEMPLATES.get(event)
-        template = await session.scalar(select(EmailTemplate).where(EmailTemplate.name == event))
-        subject = render_template(template.subject if template else (defaults or {}).get("subject", event), context)
-        body = render_template(template.body if template else (defaults or {}).get("body", ""), context)
+        subject, body = await render_event(session, event, context)
 
         telegram = get_telegram()
         if telegram:

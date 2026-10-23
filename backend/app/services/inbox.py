@@ -5,36 +5,39 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.models import Invite, Notification, Program, Researcher
-from app.services.notifications import send_user_email
+from app.services.notifications import render_event, send_user_email
 
 
 async def notify_invited_researcher(session: AsyncSession, invite: Invite, program: Program) -> bool:
-    """If the invited email already has a researcher account, drop an invitation in their inbox.
+    """Tell the invitee about their invite. Best effort; never raises.
 
-    Returns True when a notification was created. Never raises (inbox is best effort).
+    - Existing account: in-app inbox notification + email pointing at the inbox.
+    - No account yet (e.g. approved applicant): email with the activation link.
+    Email needs platform SMTP; returns True when an email was actually sent.
     """
     try:
+        frontend = get_settings().frontend_url
         researcher = await session.scalar(select(Researcher).where(Researcher.email == invite.email.lower()))
-        if researcher is None or not researcher.hashed_password or researcher.status == "banned":
-            return False  # no account yet -> they use the emailed/shared invite link instead
-        session.add(
-            Notification(
-                researcher_id=researcher.id,
-                kind="invite",
-                title=f"You're invited to {program.name}",
-                body="Open your notifications to accept or decline this invitation.",
-                invite_id=invite.id,
+        if researcher is not None and researcher.hashed_password and researcher.status != "banned":
+            session.add(
+                Notification(
+                    researcher_id=researcher.id,
+                    kind="invite",
+                    title=f"You're invited to {program.name}",
+                    body="Open your notifications to accept or decline this invitation.",
+                    invite_id=invite.id,
+                )
             )
-        )
-        await session.commit()
-        await send_user_email(
+            await session.commit()
+            event, link = "invite_existing", f"{frontend}/researcher/notifications"
+        else:
+            event, link = "invite_new", f"{frontend}/invite/{invite.token}"
+        subject, body = await render_event(
             session,
-            researcher.email,
-            f"You're invited to {program.name}",
-            f"You've been invited to join {program.name}.\n"
-            f"Sign in and open your notifications to accept: {get_settings().frontend_url}/researcher/notifications",
+            event,
+            {"program": program.name, "email": invite.email, "link": link, "expires": f"{invite.expires_at:%Y-%m-%d}"},
         )
-        return True
+        return await send_user_email(session, invite.email, subject, body)
     except Exception:
         await session.rollback()
         return False
