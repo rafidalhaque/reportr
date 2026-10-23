@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Check,
@@ -1828,6 +1828,79 @@ function PublicReportingCard({
   );
 }
 
+/** Super-admin only: suspend/unsuspend and permanent deletion. */
+function DangerZoneCard({
+  program,
+  onSaved,
+}: {
+  program: ProgramDetail;
+  onSaved: (program: ProgramDetail) => void;
+}) {
+  const router = useRouter();
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const suspended = program.status === "suspended";
+
+  async function toggleSuspend() {
+    setBusy(true);
+    setError("");
+    try {
+      onSaved(await apiPost<ProgramDetail>(`/programs/${program.id}/${suspended ? "unsuspend" : "suspend"}`));
+    } catch (err) {
+      setError(errMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onDelete() {
+    setBusy(true);
+    setError("");
+    try {
+      await apiDelete(`/programs/${program.id}?confirm_slug=${encodeURIComponent(confirm)}`);
+      router.replace("/dashboard");
+    } catch (err) {
+      setError(errMessage(err));
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card className="border-red-200 dark:border-red-900">
+      <CardHeader>
+        <CardTitle>Danger zone</CardTitle>
+        <CardDescription>Super admin only.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {error && <ErrorAlert>{error}</ErrorAlert>}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="max-w-lg text-sm text-slate-600 dark:text-slate-300">
+            {suspended
+              ? "Lift the suspension. The program returns as Paused so you can re-activate it deliberately."
+              : "Suspend: freezes the program. No new reports, applications or invites, and only super admins can edit it."}
+          </p>
+          <Button type="button" variant="outline" disabled={busy} onClick={toggleSuspend}>
+            {suspended ? "Unsuspend program" : "Suspend program"}
+          </Button>
+        </div>
+        <div className="space-y-2 border-t border-slate-200 pt-4 dark:border-slate-800">
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            Delete permanently removes the program with its reports, comments, invites, members, roles, scope and
+            applications. Attachments stay in storage. Type <code>{program.slug}</code> to confirm.
+          </p>
+          <div className="flex max-w-md gap-2">
+            <Input value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder={program.slug} />
+            <Button type="button" variant="destructive" disabled={busy || confirm !== program.slug} onClick={onDelete}>
+              Delete
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function SettingsTab({
   program,
   onSaved,
@@ -1865,7 +1938,7 @@ function SettingsTab({
       const updated = await apiPatch<ProgramDetail>(`/programs/${program.id}`, {
         name,
         description,
-        status,
+        status: status === "suspended" ? undefined : status, // lifted via unsuspend only
         visibility,
         scope_markdown: scopeMarkdown,
       });
@@ -1890,8 +1963,15 @@ function SettingsTab({
       {saved && <SuccessAlert>Program updated.</SuccessAlert>}
       {error && <ErrorAlert>{error}</ErrorAlert>}
 
+      {program.status === "suspended" && (
+        <ErrorAlert>
+          This program is suspended by a super admin: reports, applications and invites are blocked.
+        </ErrorAlert>
+      )}
+
       <PublicReportingCard program={program} onSaved={onSaved} />
       <ProgramEmailCard programId={program.id} />
+      {me.global_role === "super_admin" && <DangerZoneCard program={program} onSaved={onSaved} />}
 
       <form onSubmit={onSubmit} className="grid gap-6 lg:grid-cols-2">
         <Card>
@@ -1926,6 +2006,11 @@ function SettingsTab({
                       {titleCase(s)}
                     </option>
                   ))}
+                  {program.status === "suspended" && (
+                    <option value="suspended" disabled>
+                      Suspended
+                    </option>
+                  )}
                 </Select>
               </div>
               <div className="space-y-1.5">

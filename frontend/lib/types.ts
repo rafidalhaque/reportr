@@ -10,7 +10,7 @@ export type ReportStatus =
   | "informative"
   | "accepted"
   | "resolved";
-export type ProgramStatus = "draft" | "active" | "paused" | "closed";
+export type ProgramStatus = "draft" | "active" | "paused" | "closed" | "suspended";
 export type Visibility = "public" | "internal" | "private";
 
 export interface Me {

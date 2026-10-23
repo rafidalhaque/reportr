@@ -68,7 +68,7 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
 ## Programs
 
 - ✅ **Program CRUD** — create (org admin+), edit (manage-scope permission), auto-generated
-  unique slugs, description, status lifecycle (draft / active / paused / closed), visibility
+  unique slugs, description, status lifecycle (draft / active / paused / closed, plus super-admin `suspended`), visibility
   (public / internal / private).
 - ✅ **Public report form toggle** — per program, on the Settings tab with a copyable form
   link; the form only accepts submissions while the program is active.
@@ -83,6 +83,14 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
   URLs, copy-ready `curl` examples, response samples, rate-limit and error-contract notes.
 - ✅ **`org_id` forward compatibility** — every domain table carries the column for the
   future multi-org/SaaS layer (no multi-org logic yet).
+
+- ✅ **Suspend / unsuspend** (super admin) — `POST /api/programs/{id}/suspend|unsuspend`.
+  A suspended program rejects new reports, applications and invites, drops off public pages,
+  and can only be edited by a super admin. Unsuspending returns it as `paused`.
+- ✅ **Delete program** (super admin) — `DELETE /api/programs/{id}?confirm_slug=<slug>`
+  permanently removes the program with its reports, comments, invites, members, roles, scope,
+  applications and SMTP override (attachments remain in object storage). Both actions live in a
+  "Danger zone" card on the program Settings tab.
 
 ## Scope management
 
@@ -182,7 +190,7 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
   backend and everything else to the frontend.
 - ✅ **Idempotent seed** — default org, super admin, demo program with example scope,
   platform settings, email templates.
-- ✅ **Test suite** — 37 tests on in-memory SQLite: end-to-end API flows (invites, reports,
+- ✅ **Test suite** — 38 tests on in-memory SQLite: end-to-end API flows (invites, reports,
   triage, RBAC, public forms, applications), email-stack tests with captured delivery, the
   CWE catalog sync check, and a static AST guard against Python 3.12/3.14 annotation-order
   drift.

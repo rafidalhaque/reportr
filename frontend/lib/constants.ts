@@ -10,6 +10,7 @@ export const REPORT_STATUSES = [
   "resolved",
 ] as const;
 export const REPORT_EDITABLE_STATUSES = ["new", "triaging"] as const;
+// "suspended" is deliberately absent: only the super-admin suspend endpoint sets it.
 export const PROGRAM_STATUSES = ["draft", "active", "paused", "closed"] as const;
 export const PROGRAM_VISIBILITIES = ["public", "internal", "private"] as const;
 export const PROGRAM_ROLES = ["owner", "triager", "viewer"] as const;

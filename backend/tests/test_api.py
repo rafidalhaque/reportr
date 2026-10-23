@@ -719,3 +719,34 @@ async def test_admin_researcher_directory_and_promotion(admin_client, plain_clie
     assert login.status_code in (200, 204)
     report_id = (await staff_client.get("/api/reports")).json()[0]["id"]
     assert (await staff_client.patch(f"/api/reports/{report_id}/triage", json={"status": "triaging"})).status_code == 200
+
+
+async def test_super_admin_suspend_and_delete_program(admin_client, plain_client, client, make_client):
+    program_id = client.ids["program_id"]
+    invite = (await admin_client.post(f"/api/programs/{program_id}/invites", json={"email": "sus@test.com"})).json()
+    researcher = await make_client()
+    await researcher.post("/api/auth/researchers/register", json={"token": invite["token"], "password": "res12345"})
+    report = (await researcher.post("/api/reports", json={"program_id": program_id, "title": "t"})).json()
+    await admin_client.post(f"/api/reports/{report['id']}/comments", json={"body": "hi"})
+    await admin_client.post(f"/api/programs/{program_id}/scope", json={"target": "a.example.com"})
+
+    # only super admins may suspend / delete
+    assert (await plain_client.post(f"/api/programs/{program_id}/suspend")).status_code == 403
+    assert (await plain_client.delete(f"/api/programs/{program_id}", params={"confirm_slug": "x"})).status_code == 403
+
+    suspended = await admin_client.post(f"/api/programs/{program_id}/suspend")
+    assert suspended.json()["status"] == "suspended"
+    assert (await researcher.post("/api/reports", json={"program_id": program_id, "title": "blocked"})).status_code == 400
+    assert (await admin_client.post(f"/api/programs/{program_id}/invites", json={"email": "new@test.com"})).status_code == 403
+    assert "test-program" not in [p["slug"] for p in (await client.get("/api/public/programs")).json()]
+
+    restored = await admin_client.post(f"/api/programs/{program_id}/unsuspend")
+    assert restored.json()["status"] == "paused"
+    assert (await admin_client.post(f"/api/programs/{program_id}/unsuspend")).status_code == 400
+
+    # delete needs the slug as confirmation and wipes dependents
+    assert (await admin_client.delete(f"/api/programs/{program_id}", params={"confirm_slug": "nope"})).status_code == 400
+    assert (await admin_client.delete(f"/api/programs/{program_id}", params={"confirm_slug": "test-program"})).status_code == 204
+    assert (await admin_client.get(f"/api/programs/{program_id}")).status_code == 404
+    assert (await admin_client.get("/api/reports")).json() == []
+    assert (await researcher.get("/api/programs")).json() == []

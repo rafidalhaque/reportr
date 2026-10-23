@@ -39,6 +39,7 @@ const programStatusColors: Record<string, BadgeColor> = {
   active: "green",
   paused: "amber",
   closed: "red",
+  suspended: "red",
 };
 
 export function ProgramStatusBadge({ status }: { status: string }) {

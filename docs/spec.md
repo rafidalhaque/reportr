@@ -40,7 +40,7 @@ All tables carry `org_id` (nullable/defaulted to a single org row for MVP) — c
 | Table | Key fields |
 |---|---|
 | `orgs` | *(MVP: single row)* name, slug — placeholder for future multi-tenancy |
-| `programs` | org_id, name, slug, description, scope/rules (markdown), status (draft/active/paused/closed), visibility (public/internal/private), public_reporting |
+| `programs` | org_id, name, slug, description, scope/rules (markdown), status (draft/active/paused/closed/suspended), visibility (public/internal/private), public_reporting |
 | `program_scope` | program_id, target, description, in_scope, severity_guide |
 | `staff_users` | org_id, email, name, global_role |
 | `researchers` | email, name, portfolio links, global status (applicant/active/banned) |

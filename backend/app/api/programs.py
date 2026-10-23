@@ -22,12 +22,17 @@ from app.database import get_session
 from app.models import (
     Application,
     Invite,
+    Notification,
     Org,
+    Payout,
     Program,
+    ProgramEmailSettings,
     ProgramMembership,
     ProgramRole,
     Report,
+    ReportComment,
     Researcher,
+    ScopeEntry,
     StaffUser,
 )
 from app.schemas import (
@@ -138,6 +143,8 @@ async def update_program(
     program = await session.get(Program, program_id)
     if program is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Program not found")
+    if program.status == "suspended" and _user.global_role != "super_admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "This program is suspended; only a super admin can change it")
     data = payload.model_dump(exclude_unset=True)
     for field in ("name", "description", "scope_markdown", "status", "visibility", "public_reporting"):
         if data.get(field) is not None:
@@ -145,6 +152,66 @@ async def update_program(
     await session.commit()
     await session.refresh(program)
     return program
+
+
+@router.post("/{program_id}/suspend", response_model=ProgramDetail)
+async def suspend_program(
+    program_id: UUID,
+    _admin: StaffUser = Depends(require_global()),  # super_admin only
+    session: AsyncSession = Depends(get_session),
+):
+    """Freeze a program: no new reports/applications/invites and no edits except by a super admin."""
+    program = await session.get(Program, program_id)
+    if program is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Program not found")
+    program.status = "suspended"
+    await session.commit()
+    await session.refresh(program)
+    return program
+
+
+@router.post("/{program_id}/unsuspend", response_model=ProgramDetail)
+async def unsuspend_program(
+    program_id: UUID,
+    _admin: StaffUser = Depends(require_global()),
+    session: AsyncSession = Depends(get_session),
+):
+    """Lift a suspension; the program comes back as `paused` so it can be re-activated deliberately."""
+    program = await session.get(Program, program_id)
+    if program is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Program not found")
+    if program.status != "suspended":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Program is not suspended")
+    program.status = "paused"
+    await session.commit()
+    await session.refresh(program)
+    return program
+
+
+@router.delete("/{program_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_program(
+    program_id: UUID,
+    confirm_slug: str,
+    _admin: StaffUser = Depends(require_global()),
+    session: AsyncSession = Depends(get_session),
+):
+    """Permanently delete a program and everything under it (reports, comments, invites,
+    memberships, roles, scope, applications, SMTP override). `confirm_slug` must match.
+    Uploaded attachments stay in object storage."""
+    program = await session.get(Program, program_id)
+    if program is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Program not found")
+    if confirm_slug != program.slug:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "confirm_slug does not match the program slug")
+    report_ids = select(Report.id).where(Report.program_id == program_id)
+    invite_ids = select(Invite.id).where(Invite.program_id == program_id)
+    await session.execute(delete(Notification).where(Notification.invite_id.in_(invite_ids)))
+    await session.execute(delete(ReportComment).where(ReportComment.report_id.in_(report_ids)))
+    await session.execute(delete(Payout).where(Payout.report_id.in_(report_ids)))
+    for model in (Report, Invite, ProgramMembership, ProgramRole, ScopeEntry, ProgramEmailSettings, Application):
+        await session.execute(delete(model).where(model.program_id == program_id))
+    await session.execute(delete(Program).where(Program.id == program_id))
+    await session.commit()
 
 
 @router.get("/{program_id}/stats", response_model=ProgramStats)
@@ -182,10 +249,15 @@ async def program_stats(
 async def create_invite(
     program_id: UUID,
     payload: InviteCreate,
-    program: Program = Depends(require_program_perm(ACTION_MANAGE_INVITES)),
+    _user: StaffUser = Depends(require_program_perm(ACTION_MANAGE_INVITES)),
     session: AsyncSession = Depends(get_session),
 ):
     settings = get_settings()
+    program = await session.get(Program, program_id)
+    if program is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Program not found")
+    if program.status == "suspended":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "This program is suspended")
     email = payload.email.lower()
     already_member = await session.scalar(
         select(ProgramMembership.id)

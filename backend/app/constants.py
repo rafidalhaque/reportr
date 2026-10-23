@@ -32,7 +32,8 @@ PROGRAM_ROLE_ACTIONS: dict[str, set[str]] = {
 }
 PROGRAM_ROLES = set(PROGRAM_ROLE_ACTIONS)
 
-PROGRAM_STATUSES = ("draft", "active", "paused", "closed")
+# "suspended" is set only by a super admin (POST /programs/{id}/suspend) and freezes the program
+PROGRAM_STATUSES = ("draft", "active", "paused", "closed", "suspended")
 # internal: any logged-in researcher or staff member may view it (not listed publicly)
 PROGRAM_VISIBILITIES = ("public", "internal", "private")
 RESEARCHER_STATUSES = ("applicant", "active", "banned")

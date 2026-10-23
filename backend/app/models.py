@@ -48,7 +48,7 @@ class Program(Base):
     slug: Mapped[str] = mapped_column(String(200), unique=True)
     description: Mapped[str] = mapped_column(Text, default="")
     scope_markdown: Mapped[str] = mapped_column(Text, default="")
-    status: Mapped[str] = mapped_column(String(32), default="draft")  # draft/active/paused/closed
+    status: Mapped[str] = mapped_column(String(32), default="draft")  # draft/active/paused/closed/suspended
     visibility: Mapped[str] = mapped_column(String(32), default="private")  # public/internal/private
     public_reporting: Mapped[bool] = mapped_column(Boolean, default=False)  # unauthenticated report form
     created_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("staff_users.id"), nullable=True)
