@@ -26,7 +26,9 @@ export default function ResearcherNotificationsPage() {
     if (!me) return;
     load();
     // Opening the inbox marks everything as seen; pending invitations stay actionable.
-    apiPost("/me/notifications/read-all").catch(() => {});
+    apiPost("/me/notifications/read-all")
+      .then(() => window.dispatchEvent(new Event("inbox-updated")))
+      .catch(() => {});
   }, [me, load]);
 
   async function respond(n: InboxNotification, action: "accept" | "decline") {

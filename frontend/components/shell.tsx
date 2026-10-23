@@ -108,9 +108,14 @@ export function AppShell({ me, children }: { me: Me; children: React.ReactNode }
 
   useEffect(() => {
     if (isStaff) return;
-    apiGet<{ unread: number }>("/me/notifications/unread-count")
-      .then((r) => setUnread(r.unread))
-      .catch(() => setUnread(0));
+    const refresh = () =>
+      apiGet<{ unread: number }>("/me/notifications/unread-count")
+        .then((r) => setUnread(r.unread))
+        .catch(() => setUnread(0));
+    refresh();
+    // The notifications page fires this after marking everything read.
+    window.addEventListener("inbox-updated", refresh);
+    return () => window.removeEventListener("inbox-updated", refresh);
   }, [isStaff, pathname]);
 
   async function handleSignOut() {
