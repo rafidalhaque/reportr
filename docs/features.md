@@ -115,6 +115,10 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
 - ✅ **CSV bulk import** — header aliases (`target`/`asset`/`host`/`url`/`domain`), flexible
   in/out parsing (yes/no, in/out, true/false), blank-target rows skipped, case-insensitive
   dedupe on re-import, created/skipped result feedback.
+- ✅ **Researcher program page** — header with name, status/visibility badges and description,
+  a right-aligned **Submit report** button, and Overview / Scope / Reports tabs (the researcher's
+  own reports for that program). The submission form opens as its own page
+  (`/researcher/programs/{id}/submit`).
 - ✅ **Researcher-facing scope** — structured entries render as a table on the researcher
   submission page, above the free-form overview markdown.
 - ✅ **Overview markdown** — free-form program overview/rules (markdown with live preview
