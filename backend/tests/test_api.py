@@ -750,3 +750,32 @@ async def test_super_admin_suspend_and_delete_program(admin_client, plain_client
     assert (await admin_client.get(f"/api/programs/{program_id}")).status_code == 404
     assert (await admin_client.get("/api/reports")).json() == []
     assert (await researcher.get("/api/programs")).json() == []
+
+
+async def test_admin_manages_researcher_memberships(admin_client, plain_client, client, make_client):
+    program_id = client.ids["program_id"]
+    other = (await admin_client.post("/api/programs", json={"name": "Elsewhere", "status": "active"})).json()["id"]
+    invite = (await admin_client.post(f"/api/programs/{program_id}/invites", json={"email": "mover@test.com"})).json()
+    researcher = await make_client()
+    await researcher.post("/api/auth/researchers/register", json={"token": invite["token"], "password": "res12345"})
+    rid = next(r["id"] for r in (await admin_client.get("/api/admin/researchers")).json() if r["email"] == "mover@test.com")
+
+    assert (await plain_client.get(f"/api/admin/researchers/{rid}/memberships")).status_code == 403
+    assert [m["program_id"] for m in (await admin_client.get(f"/api/admin/researchers/{rid}/memberships")).json()] == [program_id]
+
+    # revoked from one program ...
+    assert (await admin_client.delete(f"/api/admin/researchers/{rid}/memberships/{program_id}")).status_code == 204
+    assert (await researcher.get("/api/programs")).json() == []
+    # ... and assigned straight to another (and back to the first), researcher is told in the inbox
+    assert (await admin_client.post(f"/api/admin/researchers/{rid}/memberships", json={"program_id": other})).status_code == 201
+    assert (await admin_client.post(f"/api/admin/researchers/{rid}/memberships", json={"program_id": other})).status_code == 409
+    assert other in [p["id"] for p in (await researcher.get("/api/programs")).json()]
+    note = (await researcher.get("/api/me/notifications")).json()[0]
+    assert note["kind"] == "membership" and "Elsewhere" in note["title"]
+
+    # ban blocks assignment and submissions; reinstating restores both
+    banned = await admin_client.patch(f"/api/admin/researchers/{rid}", json={"status": "banned"})
+    assert banned.json()["status"] == "banned"
+    assert (await admin_client.post(f"/api/admin/researchers/{rid}/memberships", json={"program_id": program_id})).status_code == 403
+    assert (await researcher.post("/api/reports", json={"program_id": other, "title": "x"})).status_code == 403
+    assert (await admin_client.patch(f"/api/admin/researchers/{rid}", json={"status": "active"})).json()["status"] == "active"

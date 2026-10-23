@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { apiGet, apiPost, errMessage } from "@/lib/api";
+import { Fragment, useCallback, useEffect, useState } from "react";
+import { apiDelete, apiGet, apiPatch, apiPost, errMessage } from "@/lib/api";
 import { fmtDate, titleCase } from "@/lib/utils";
 import type { Application, Program } from "@/lib/types";
 import { useMe } from "@/components/auth";
@@ -27,22 +27,150 @@ interface AdminResearcher {
   is_staff: boolean;
 }
 
+interface AdminMembership {
+  program_id: string;
+  program_name: string;
+  program_status: string;
+  joined_at: string;
+}
+
+/** Everything a program can do with a researcher, available to the super admin for any program. */
+function ManagePanel({
+  researcher,
+  programs,
+  onChanged,
+  onNotice,
+}: {
+  researcher: AdminResearcher;
+  programs: Program[];
+  onChanged: () => void;
+  onNotice: (m: string) => void;
+}) {
+  const [memberships, setMemberships] = useState<AdminMembership[] | null>(null);
+  const [programId, setProgramId] = useState("");
+  const [mode, setMode] = useState<"assign" | "invite">("assign");
+  const [error, setError] = useState("");
+
+  const load = useCallback(() => {
+    apiGet<AdminMembership[]>(`/admin/researchers/${researcher.id}/memberships`)
+      .then(setMemberships)
+      .catch((e) => setError(errMessage(e)));
+  }, [researcher.id]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const memberOf = new Set(memberships?.map((m) => m.program_id));
+  const available = programs.filter((p) => !memberOf.has(p.id) && p.status !== "suspended");
+
+  async function add() {
+    setError("");
+    try {
+      if (mode === "assign") {
+        await apiPost(`/admin/researchers/${researcher.id}/memberships`, { program_id: programId });
+        onNotice(`${researcher.email} was added to the program.`);
+      } else {
+        await apiPost(`/programs/${programId}/invites`, { email: researcher.email });
+        onNotice(`Invite sent to ${researcher.email}.`);
+      }
+      setProgramId("");
+      load();
+      onChanged();
+    } catch (err) {
+      setError(errMessage(err));
+    }
+  }
+
+  async function remove(m: AdminMembership) {
+    if (!window.confirm(`Remove ${researcher.email} from ${m.program_name}?`)) return;
+    setError("");
+    try {
+      await apiDelete(`/admin/researchers/${researcher.id}/memberships/${m.program_id}`);
+      load();
+      onChanged();
+    } catch (err) {
+      setError(errMessage(err));
+    }
+  }
+
+  async function setStatus(status: "active" | "banned") {
+    setError("");
+    try {
+      await apiPatch(`/admin/researchers/${researcher.id}`, { status });
+      onNotice(`${researcher.email} is now ${status}.`);
+      onChanged();
+    } catch (err) {
+      setError(errMessage(err));
+    }
+  }
+
+  return (
+    <div className="space-y-4 p-4">
+      {error && <ErrorAlert>{error}</ErrorAlert>}
+      <div>
+        <div className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">Programs</div>
+        {memberships && memberships.length === 0 && (
+          <p className="text-sm text-slate-500">Not a member of any program.</p>
+        )}
+        <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+          {memberships?.map((m) => (
+            <li key={m.program_id} className="flex items-center justify-between gap-3 py-1.5 text-sm">
+              <span>
+                {m.program_name} <span className="text-xs text-slate-500">since {fmtDate(m.joined_at)}</span>
+              </span>
+              <Button size="sm" variant="ghost" onClick={() => remove(m)}>Remove</Button>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {researcher.has_account && researcher.status !== "banned" && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={mode} onChange={(e) => setMode(e.target.value as "assign" | "invite")} className="w-44">
+            <option value="assign">Add directly</option>
+            <option value="invite">Send invite</option>
+          </Select>
+          <Select value={programId} onChange={(e) => setProgramId(e.target.value)} className="w-56">
+            <option value="">Program…</option>
+            {available.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </Select>
+          <Button size="sm" disabled={!programId} onClick={add}>Add to program</Button>
+        </div>
+      )}
+      {researcher.has_account && (
+        <div>
+          {researcher.status === "banned" ? (
+            <Button size="sm" variant="outline" onClick={() => setStatus("active")}>Reinstate researcher</Button>
+          ) : (
+            <Button size="sm" variant="destructive" onClick={() => setStatus("banned")}>Ban researcher</Button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ResearchersPanel({ programs, onNotice }: { programs: Program[]; onNotice: (m: string) => void }) {
   const [rows, setRows] = useState<AdminResearcher[] | null>(null);
   const [q, setQ] = useState("");
   const [error, setError] = useState("");
   const [promoting, setPromoting] = useState<string | null>(null);
+  const [managing, setManaging] = useState<string | null>(null);
   const [role, setRole] = useState<"staff" | "triager">("triager");
   const [programId, setProgramId] = useState("");
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      apiGet<AdminResearcher[]>("/admin/researchers", { q })
-        .then(setRows)
-        .catch((e) => setError(errMessage(e)));
-    }, 250);
-    return () => window.clearTimeout(timer);
+  const refresh = useCallback(() => {
+    apiGet<AdminResearcher[]>("/admin/researchers", { q })
+      .then(setRows)
+      .catch((e) => setError(errMessage(e)));
   }, [q]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(refresh, 250);
+    return () => window.clearTimeout(timer);
+  }, [refresh]);
 
   async function promote(r: AdminResearcher) {
     setError("");
@@ -53,7 +181,7 @@ function ResearchersPanel({ programs, onNotice }: { programs: Program[]; onNotic
       });
       onNotice(`${r.email} can now sign in at /login as ${role === "triager" ? "a triager" : "staff"} with their existing password.`);
       setPromoting(null);
-      setRows(await apiGet<AdminResearcher[]>("/admin/researchers", { q }));
+      refresh();
     } catch (err) {
       setError(errMessage(err));
     }
@@ -76,7 +204,8 @@ function ResearchersPanel({ programs, onNotice }: { programs: Program[]; onNotic
           </TableHeader>
           <TableBody>
             {rows?.map((r) => (
-              <TableRow key={r.id}>
+              <Fragment key={r.id}>
+              <TableRow>
                 <TableCell>
                   <div className="font-medium">{r.name || r.email}</div>
                   <div className="text-xs text-slate-500 dark:text-slate-400">{r.email}</div>
@@ -121,8 +250,24 @@ function ResearchersPanel({ programs, onNotice }: { programs: Program[]; onNotic
                       Promote
                     </Button>
                   )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="ml-2"
+                    onClick={() => setManaging(managing === r.id ? null : r.id)}
+                  >
+                    Manage
+                  </Button>
                 </TableCell>
               </TableRow>
+              {managing === r.id && (
+                <TableRow>
+                  <td colSpan={5} className="bg-slate-50 dark:bg-slate-900/50">
+                    <ManagePanel researcher={r} programs={programs} onChanged={refresh} onNotice={onNotice} />
+                  </td>
+                </TableRow>
+              )}
+              </Fragment>
             ))}
             {rows?.length === 0 && (
               <TableRow>

@@ -443,3 +443,18 @@ class AdminResearcherRead(BaseModel):
 class PromoteRequest(BaseModel):
     role: Literal["staff", "triager"]
     program_id: UUID | None = None  # required for "triager"
+
+
+class AdminMembershipRead(BaseModel):
+    program_id: UUID
+    program_name: str
+    program_status: str
+    joined_at: datetime
+
+
+class AdminMembershipAdd(BaseModel):
+    program_id: UUID
+
+
+class AdminResearcherStatus(BaseModel):
+    status: Literal["active", "banned"]

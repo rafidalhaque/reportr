@@ -55,6 +55,12 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
   login with the same email and password hash as `staff` or as `triager` of a chosen program
   (never downgrades an existing owner). The researcher account stays; the two sign-ins remain
   separate. Applicants without an account and banned researchers cannot be promoted.
+- ✅ **Manage any researcher's programs** — per researcher, a **Manage** panel lists their
+  memberships (`GET /api/admin/researchers/{id}/memberships`) and lets a super admin remove them
+  (`DELETE …/memberships/{program_id}`), add them to any non-suspended program directly
+  (`POST …/memberships`, the researcher is told in their inbox) or send a normal invite, so
+  someone removed from one program can be placed in another. Also ban / reinstate
+  (`PATCH /api/admin/researchers/{id}`).
 
 ## Roles & permissions (RBAC)
 
@@ -195,7 +201,7 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
   backend and everything else to the frontend.
 - ✅ **Idempotent seed** — default org, super admin, demo program with example scope,
   platform settings, email templates.
-- ✅ **Test suite** — 40 tests on in-memory SQLite: end-to-end API flows (invites, reports,
+- ✅ **Test suite** — 41 tests on in-memory SQLite: end-to-end API flows (invites, reports,
   triage, RBAC, public forms, applications), email-stack tests with captured delivery, the
   CWE catalog sync check, and a static AST guard against Python 3.12/3.14 annotation-order
   drift.

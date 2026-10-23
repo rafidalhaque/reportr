@@ -1,14 +1,23 @@
 """Super-admin platform directory: all researchers, and promotion to staff/triager."""
 
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, status as http
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.programs import get_default_org
 from app.core.guards import require_global
 from app.database import get_session
-from app.models import Program, ProgramMembership, ProgramRole, Report, Researcher, StaffUser
-from app.schemas import AdminResearcherRead, PromoteRequest, StaffRead
+from app.models import Notification, Program, ProgramMembership, ProgramRole, Report, Researcher, StaffUser
+from app.schemas import (
+    AdminMembershipAdd,
+    AdminMembershipRead,
+    AdminResearcherRead,
+    AdminResearcherStatus,
+    PromoteRequest,
+    StaffRead,
+)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -100,3 +109,110 @@ async def promote_researcher(
     await session.commit()
     await session.refresh(staff)
     return staff
+
+
+# --- Program memberships, managed by a super admin on any researcher -----------
+
+
+async def _researcher_or_404(session: AsyncSession, researcher_id: UUID) -> Researcher:
+    researcher = await session.get(Researcher, researcher_id)
+    if researcher is None:
+        raise HTTPException(http.HTTP_404_NOT_FOUND, "Researcher not found")
+    return researcher
+
+
+@router.get("/researchers/{researcher_id}/memberships", response_model=list[AdminMembershipRead])
+async def researcher_memberships(
+    researcher_id: UUID,
+    _admin: StaffUser = Depends(require_global()),
+    session: AsyncSession = Depends(get_session),
+):
+    await _researcher_or_404(session, researcher_id)
+    rows = (
+        await session.execute(
+            select(ProgramMembership, Program)
+            .join(Program, ProgramMembership.program_id == Program.id)
+            .where(ProgramMembership.researcher_id == researcher_id)
+            .order_by(ProgramMembership.created_at)
+        )
+    ).all()
+    return [
+        AdminMembershipRead(program_id=p.id, program_name=p.name, program_status=p.status, joined_at=m.created_at)
+        for m, p in rows
+    ]
+
+
+@router.post("/researchers/{researcher_id}/memberships", response_model=AdminMembershipRead, status_code=201)
+async def assign_researcher(
+    researcher_id: UUID,
+    payload: AdminMembershipAdd,
+    _admin: StaffUser = Depends(require_global()),
+    session: AsyncSession = Depends(get_session),
+):
+    """Add a researcher straight to a program (no invite round-trip), e.g. after being removed elsewhere."""
+    researcher = await _researcher_or_404(session, researcher_id)
+    if not researcher.hashed_password:
+        raise HTTPException(http.HTTP_400_BAD_REQUEST, "This researcher has not activated an account yet")
+    if researcher.status == "banned":
+        raise HTTPException(http.HTTP_403_FORBIDDEN, "Banned researchers cannot be assigned")
+    program = await session.get(Program, payload.program_id)
+    if program is None:
+        raise HTTPException(http.HTTP_404_NOT_FOUND, "Program not found")
+    if program.status == "suspended":
+        raise HTTPException(http.HTTP_403_FORBIDDEN, "This program is suspended")
+    membership = await session.scalar(
+        select(ProgramMembership).where(
+            ProgramMembership.researcher_id == researcher_id, ProgramMembership.program_id == program.id
+        )
+    )
+    if membership is not None:
+        raise HTTPException(http.HTTP_409_CONFLICT, "Already a member of this program")
+    membership = ProgramMembership(researcher_id=researcher_id, program_id=program.id)
+    session.add(membership)
+    session.add(
+        Notification(
+            researcher_id=researcher_id,
+            kind="membership",
+            title=f"You were added to {program.name}",
+            body="A platform admin gave you access to this program.",
+        )
+    )
+    await session.commit()
+    await session.refresh(membership)
+    return AdminMembershipRead(
+        program_id=program.id, program_name=program.name, program_status=program.status,
+        joined_at=membership.created_at,
+    )
+
+
+@router.delete("/researchers/{researcher_id}/memberships/{program_id}", status_code=204)
+async def unassign_researcher(
+    researcher_id: UUID,
+    program_id: UUID,
+    _admin: StaffUser = Depends(require_global()),
+    session: AsyncSession = Depends(get_session),
+):
+    await _researcher_or_404(session, researcher_id)
+    await session.execute(
+        delete(ProgramMembership).where(
+            ProgramMembership.researcher_id == researcher_id, ProgramMembership.program_id == program_id
+        )
+    )
+    await session.commit()
+
+
+@router.patch("/researchers/{researcher_id}", response_model=AdminResearcherRead)
+async def set_researcher_status(
+    researcher_id: UUID,
+    payload: AdminResearcherStatus,
+    _admin: StaffUser = Depends(require_global()),
+    session: AsyncSession = Depends(get_session),
+):
+    """Ban or reinstate a researcher (applicants without an account cannot be activated this way)."""
+    researcher = await _researcher_or_404(session, researcher_id)
+    if payload.status == "active" and not researcher.hashed_password:
+        raise HTTPException(http.HTTP_400_BAD_REQUEST, "This researcher has not activated an account yet")
+    researcher.status = payload.status
+    await session.commit()
+    rows = await list_researchers(q=researcher.email, status=None, _admin=_admin, session=session)
+    return next(r for r in rows if r.id == researcher.id)
