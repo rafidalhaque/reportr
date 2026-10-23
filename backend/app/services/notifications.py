@@ -5,7 +5,8 @@ defaults below) with `{{placeholder}}` substitution, then fans out to:
   - Telegram (platform bot, if configured) — subject + body
   - Email — via SMTP: the program's override when enabled (todo #3), else the
     platform SMTP settings (todo #2). Emails go to the configured notify_email
-    (the triage inbox); researcher-facing mail (invites etc.) is a later step.
+    (the triage inbox). Account mail (password reset, email change) goes to the user
+    via `send_user_email` on the platform SMTP.
 """
 
 import logging
@@ -175,7 +176,7 @@ async def resolve_email_config(session: AsyncSession, program_id: UUID | None) -
         row = await session.scalar(
             select(ProgramEmailSettings).where(ProgramEmailSettings.program_id == program_id)
         )
-        if row and row.enabled and row.smtp_host and row.notify_email:
+        if row and row.enabled and row.smtp_host and row.from_email and row.notify_email:
             return EmailConfig(
                 host=row.smtp_host, port=row.smtp_port or 587, username=row.smtp_username,
                 password=row.smtp_password, use_tls=row.smtp_use_tls,

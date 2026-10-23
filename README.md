@@ -31,7 +31,7 @@ The first boot migrates the database and seeds:
 - **"Demo Program"** — active + public, with example scope markdown
 
 Try the core flow: log in as admin → create an invite for your email → open
-`http://localhost:8080/invite/<token>` to activate a researcher account → submit a report →
+`<your-web-url>/invite/<token>` (set `FRONTEND_URL` to that origin) to activate a researcher account → submit a report →
 triage it from the staff side. Password resets and email changes work from the profile page
 and login screens once platform SMTP is configured (Settings → Email notifications).
 
@@ -83,7 +83,7 @@ Backend (Python 3.12+, dependencies managed with [uv](https://docs.astral.sh/uv/
 cd backend
 uv sync                                    # creates .venv from pyproject.toml + uv.lock
 uv run pytest                              # tests run on in-memory SQLite
-uv run uvicorn app.main:app --reload       # needs DATABASE_URL (Postgres) for real runs
+uv run uvicorn app.main:app --reload       # needs DATABASE_URL (Postgres); tests use SQLite
 ```
 
 Frontend (Node 20+):
@@ -91,7 +91,7 @@ Frontend (Node 20+):
 ```bash
 cd frontend
 npm install
-npm run dev            # expects the API on http://localhost:8000
+API_PROXY_TARGET=http://localhost:8000 npm run dev   # proxies same-origin /api to the backend
 ```
 
 Migrations: `cd backend && alembic upgrade head` (the Docker image runs this automatically).
@@ -102,6 +102,7 @@ Everything is env-driven — see [.env.example](.env.example). Highlights:
 
 - `SECRET` — auth signing key (change in prod)
 - `CORS_ORIGINS` — browser origins allowed to send credentials
+- `FRONTEND_URL` — public web URL used in password-reset and email-change links
 - `S3_ACCESS_KEY` / `S3_SECRET_KEY` / `S3_BUCKET` / `S3_REGION` — AWS credentials for attachment storage (unset them to disable attachments)
 - `S3_ENDPOINT` — optional; point at MinIO/R2/Spaces instead of real AWS S3
 - `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` — optional notifications for new applications,
@@ -109,12 +110,13 @@ Everything is env-driven — see [.env.example](.env.example). Highlights:
 
 ## Roadmap
 
-Shipped in this MVP: program CRUD, invite-only access with both intake paths, memberships,
-report lifecycle with assignment, comment threads with internal-only notes, RBAC, Telegram
-notifications, uploads to S3/MinIO, invite expiry job, seed onboarding.
+Shipped: see [docs/features.md](docs/features.md) for the full inventory (programs, both intake
+paths, RBAC, reports/triage, structured scope, CWE + CVSS, public report form, SMTP + Telegram
+notifications with editable templates, account flows, dark mode).
 
-Next up (spec §5): staff Kanban board, program dashboard stats UI, duplicate-detection helper;
-then payouts (Phase 2), leaderboards/hall-of-fame, public disclosure pages, audit log, SLAs.
+Next up: see [todo.md](todo.md) — track-submission page, then payouts (Phase 2). Later (spec §5):
+staff Kanban board, duplicate-detection helper, leaderboards/hall-of-fame, public disclosure
+pages, audit log, SLAs.
 
 The `org_id` column already exists on all tables as a forward-compatibility placeholder for the
 deferred SaaS layer (spec §7) — no multi-org logic is implemented.

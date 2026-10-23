@@ -19,7 +19,9 @@ services:
       ENV: prod
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-bugbounty}:${POSTGRES_PASSWORD:-bugbounty}@postgres:5432/${POSTGRES_DB:-bugbounty}
       SECRET: ${SECRET:-please_change_me_in_prod}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:3000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      # Public URL of the web app, used in password-reset / email-change links
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
       # Attachments: AWS S3 via access keys (set the S3_* vars in .env).
@@ -41,8 +43,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    # migrations then app; seed runs in-app on startup (SEED_ON_START)
-    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    # The image CMD runs migrations then the app; seed runs in-app on startup (SEED_ON_START)
 
   frontend:
     build: ./frontend

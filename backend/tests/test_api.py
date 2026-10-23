@@ -521,6 +521,17 @@ async def test_cwe_on_reports(admin_client, client, make_client):
     )
     assert bad.status_code == 422
 
+    rid = resp.json()["id"]
+    edited = await researcher.patch(
+        f"/api/reports/{rid}", json={"cwe_id": "CWE-89", "cvss": "CVSS:3.1/AV:N", "affected_asset": "x"}
+    )
+    assert edited.json()["cwe_id"] == "CWE-89"
+    cleared = await researcher.patch(f"/api/reports/{rid}", json={"cwe_id": None, "cvss": None})
+    assert cleared.json()["cwe_id"] is None and cleared.json()["cvss"] is None
+    assert cleared.json()["affected_asset"] == "x"  # untouched fields stay
+    too_long = await researcher.patch(f"/api/reports/{rid}", json={"affected_asset": "a" * 201})
+    assert too_long.status_code == 422
+
 
 async def test_public_report_cwe_and_form_scope(admin_client, client):
     program_id = client.ids["program_id"]

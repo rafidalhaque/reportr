@@ -8,7 +8,7 @@ const nextConfig = {
     // (e.g. API_PROXY_TARGET=http://localhost:8000) and `next dev` will proxy
     // same-origin /api/* requests to the FastAPI backend, so no CORS setup is
     // needed. This variable is intentionally never set anywhere in this repo;
-    // in production nginx routes /api to the backend instead.
+    // in production your reverse proxy routes /api to the backend instead.
     const target = process.env.API_PROXY_TARGET;
     if (!target) {
       return [];

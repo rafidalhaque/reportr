@@ -91,7 +91,7 @@ export function AttachmentsPicker({
         </ul>
       )}
       <p className="text-xs text-slate-400">
-        Max 5 MB per file. Allowed: png, jpg, jpeg, gif, webp, pdf, txt, md, log, json, zip.
+        Max 5 MB per file. Allowed: {ALLOWED_UPLOAD_EXTENSIONS.replaceAll(".", "").replaceAll(",", ", ")}.
       </p>
     </div>
   );

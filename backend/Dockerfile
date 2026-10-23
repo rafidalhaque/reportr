@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 
-# Dependency management via uv: pyproject.toml + uv.lock (todo: reproducible installs)
+# Dependency management via uv: pyproject.toml + uv.lock (reproducible installs)
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app

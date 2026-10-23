@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
-from app.constants import ACTION_MANAGE_INVITES, PROGRAM_ROLE_ACTIONS
+from app.constants import ACTION_MANAGE_INVITES, APPLICATION_STATUSES, PROGRAM_ROLE_ACTIONS
 from app.core.auth import current_staff
 from app.core.permissions import has_global_role, has_program_perm
 from app.database import get_session
@@ -37,6 +37,8 @@ async def list_applications(
     if program_id is not None:
         query = query.where(Application.program_id == program_id)
     if status is not None:
+        if status not in APPLICATION_STATUSES:
+            raise HTTPException(400, "Unknown status")
         query = query.where(Application.status == status)
     apps = (await session.scalars(query)).all()
     return list(apps)

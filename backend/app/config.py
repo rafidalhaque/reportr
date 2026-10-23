@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:3000"
 
     # Public API abuse protection
-    trust_proxy_headers: bool = False  # enable behind nginx (docker-compose) for real client IPs
+    trust_proxy_headers: bool = False  # enable behind a reverse proxy for real client IPs
     rate_limit_reports: str = "10/hour"  # per client IP, per program
     rate_limit_applications: str = "3/hour"  # per client IP
 

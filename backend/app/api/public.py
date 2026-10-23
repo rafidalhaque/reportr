@@ -128,10 +128,10 @@ async def public_report_form_info(slug: str, session: AsyncSession = Depends(get
     program = await session.scalar(select(Program).where(Program.slug == slug))
     if program is None:
         raise HTTPException(404, "Program not found")
-    if program.status != "active":
-        available, reason = False, "This program is not accepting reports right now"
-    elif not program.public_reporting:
+    if not program.public_reporting:
         available, reason = False, "Public reporting is disabled for this program"
+    elif program.status != "active":
+        available, reason = False, "This program is not accepting reports right now"
     else:
         available, reason = True, None
 
@@ -163,7 +163,7 @@ async def public_report_form_info(slug: str, session: AsyncSession = Depends(get
     "/programs/{slug}/reports",
     response_model=PublicReportSubmitOut,
     status_code=201,
-    dependencies=[Depends(rate_limit("public_report", get_settings().rate_limit_reports))],
+    dependencies=[Depends(rate_limit("public_report", get_settings().rate_limit_reports, key_param="slug"))],
 )
 async def public_submit_report(
     slug: str, payload: PublicReportCreate, session: AsyncSession = Depends(get_session)

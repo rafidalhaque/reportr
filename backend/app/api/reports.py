@@ -283,9 +283,18 @@ async def update_own_report(
     if report.status not in REPORT_EDITABLE_STATUSES:
         raise HTTPException(403, "This report is locked — triage has already begun")
     data = payload.model_dump(exclude_unset=True)
-    for field in ("title", "description", "severity", "cvss", "repro_steps", "affected_asset", "attachments"):
-        if field in data and data[field] is not None:
+    for field in ("title", "description", "severity", "repro_steps", "attachments"):
+        if data.get(field) is not None:
             setattr(report, field, data[field])
+    for field in ("cvss", "affected_asset"):  # optional fields: an explicit null/empty clears them
+        if field in data:
+            setattr(report, field, data[field] or None)
+    if "cwe_id" in data:
+        try:
+            cwe = resolve_cwe(data["cwe_id"])
+        except ValueError as exc:
+            raise HTTPException(422, str(exc))
+        report.cwe_id, report.cwe_name = cwe if cwe else (None, None)
     await session.commit()
     report = await _load_report(session, report.id)
     return await serialize_report(report, presign=True)

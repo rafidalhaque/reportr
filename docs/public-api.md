@@ -6,7 +6,8 @@ of them — abuse is handled with per-IP rate limiting (see below).
 
 **Stability**: these endpoints are intended for external consumption. Fields are additive
 only; removals or breaking changes will be called out in release notes. Errors always use
-the standard `{"detail": "<message>"}` shape with an appropriate HTTP status.
+the standard `{"detail": …}` shape with an appropriate HTTP status (`detail` is a string,
+except for `422` validation errors where it is a list).
 
 ---
 
@@ -47,8 +48,7 @@ Pre-check for the public report form: is it available, and what should the page 
   "program_name": "Demo Program",
   "program_slug": "demo-program",
   "description": "Example program…",
-  "scope_markdown": "## Scope
-…",
+  "scope_markdown": "## Scope\n…",
   "scope_entries": [
     { "id": "…", "target": "*.demo.example.com", "description": "", "in_scope": true, "severity_guide": "up to critical", "created_at": "…" }
   ]
@@ -114,7 +114,8 @@ Errors: `404` unknown slug · `403` public reporting disabled · `400` program n
 Application to become a researcher. Requires `email`; optionally `name`, `message`,
 `portfolio_url`, `program_id` (must be a public, active program). Returns the created
 application (`201`). Rejected with `403` when the super admin has disabled the
-researcher application form platform-wide, or when the email is banned.
+researcher application form platform-wide, or when the email is banned, and with `400` when
+`program_id` is not a public, active program.
 
 ---
 
@@ -132,7 +133,7 @@ configurable via `RATE_LIMIT_REPORTS` / `RATE_LIMIT_APPLICATIONS` (`"<count>/<se
 or `"<count>/<seconds>"`).
 
 Client IPs come from `X-Forwarded-For` only when `TRUST_PROXY_HEADERS=true` — set it when
-the API runs behind the bundled nginx (docker-compose does); leave it off when the API is
+the API runs behind your reverse proxy (docker-compose default); leave it off when the API is
 directly reachable, so clients can't spoof IPs to rotate the limit.
 
 ## Authentication & keys

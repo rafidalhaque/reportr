@@ -130,7 +130,7 @@ async def update_me(
 ):
     """Edit own profile: name for everyone, portfolio URL for researchers (todo #13).
 
-    Email and password changes are deliberately NOT here (todo #14b — needs SMTP).
+    Email and password changes live in /me/email and /me/password (todo #14b).
     """
     data = payload.model_dump(exclude_unset=True)
     user = actor.staff if actor.kind == "staff" else actor.researcher
@@ -141,8 +141,6 @@ async def update_me(
     await session.commit()
     await session.refresh(user)
     return await _build_profile(actor, session)
-
-
 
 
 # --- Account security: password + email change (todo #14b) -------------------

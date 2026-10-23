@@ -12,7 +12,7 @@ import {
   Trash2,
   UserPlus,
 } from "lucide-react";
-import { apiDelete, apiGet, apiPatch, apiPost, apiPut, errMessage, postForm } from "@/lib/api";
+import { apiDelete, apiGet, apiPatch, apiPost, errMessage, postForm } from "@/lib/api";
 import {
   PROGRAM_ROLES,
   PROGRAM_STATUSES,
@@ -25,6 +25,7 @@ import type {
   Application,
   Invite,
   Me,
+  Profile,
   ProgramDetail,
   ProgramRoleEntry,
   ProgramStats,
@@ -91,16 +92,31 @@ export default function ProgramPage() {
       .catch((e) => setError(errMessage(e)));
   }, [programId]);
 
+  // Own role on this program decides which management tabs are usable.
+  const [programRole, setProgramRole] = useState<string | null>(null);
+  useEffect(() => {
+    if (!programId) return;
+    apiGet<Profile>("/me/profile")
+      .then((p) => setProgramRole(p.memberships.find((m) => m.program_id === programId)?.role ?? null))
+      .catch(() => setProgramRole(null));
+  }, [programId]);
+
   if (loading || !me) return <FullPageLoader />;
 
   const isOrgAdmin = me.global_role === "super_admin" || me.global_role === "org_admin";
 
+  const canManageInvites = isOrgAdmin || programRole === "owner";
+
   const tabs: { key: TabKey; label: string }[] = [
     { key: "reports", label: "Reports" },
     { key: "scope", label: "Scope" },
-    { key: "invites", label: "Invites" },
-    { key: "members", label: "Members" },
-    { key: "applications", label: "Applications" },
+    ...(canManageInvites
+      ? [
+          { key: "invites" as TabKey, label: "Invites" },
+          { key: "members" as TabKey, label: "Members" },
+          { key: "applications" as TabKey, label: "Applications" },
+        ]
+      : []),
     ...(isOrgAdmin ? [{ key: "roles" as TabKey, label: "Roles" }] : []),
     { key: "settings", label: "Settings" },
     { key: "api", label: "Public API" },
@@ -701,7 +717,7 @@ function ProgramEmailCard({ programId }: { programId: string }) {
     setSaved(false);
     try {
       setConfig(
-        await apiPut<EmailConfigSettings>(`/programs/${programId}/email-settings`, {
+        await apiPatch<EmailConfigSettings>(`/programs/${programId}/email-settings`, {
           enabled: config.enabled,
           smtp_host: config.smtp_host || null,
           smtp_port: config.smtp_port || null,

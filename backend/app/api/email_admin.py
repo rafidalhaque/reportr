@@ -1,3 +1,4 @@
+from dataclasses import replace
 from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, HTTPException, status
@@ -69,7 +70,7 @@ async def get_platform_email(
     return _config_read(row)
 
 
-@router.put("/settings/email", response_model=EmailConfigRead)
+@router.patch("/settings/email", response_model=EmailConfigRead)
 async def update_platform_email(
     payload: EmailConfigUpdate,
     _admin: StaffUser = Depends(require_global()),
@@ -176,12 +177,12 @@ async def test_send_email_template(
     config = await notif.resolve_email_config(session, None)  # platform config only
     if config is None:
         raise HTTPException(400, "Platform SMTP is not configured — save it first")
-    context = dict(SAMPLE_CONTEXT.get(name, {}))
-    context["recipient"] = (payload.recipient if payload else None) or config.notify_email
+    recipient = (payload.recipient if payload else None) or config.notify_email
+    context = SAMPLE_CONTEXT.get(name, {})
     subject = render_template(row.subject, context)
     body = render_template(row.body, context)
-    await _deliver_email(config, subject, body)
-    return {"sent_to": config.notify_email}
+    await _deliver_email(replace(config, notify_email=recipient), subject, body)
+    return {"sent_to": recipient}
 
 
 # --- Program SMTP override (todo #3) ------------------------------------------
@@ -211,6 +212,8 @@ async def get_program_email(
         select(ProgramEmailSettings).where(ProgramEmailSettings.program_id == program_id)
     )
     if row is None:
+        if await session.get(Program, program_id) is None:
+            raise HTTPException(404, "Program not found")
         return EmailConfigRead(
             enabled=False, smtp_host=None, smtp_port=None, smtp_username=None,
             smtp_password_set=False, smtp_use_tls=True, from_email=None, from_name=None,
@@ -219,7 +222,7 @@ async def get_program_email(
     return _config_read(row)
 
 
-@router.put("/programs/{program_id}/email-settings", response_model=EmailConfigRead)
+@router.patch("/programs/{program_id}/email-settings", response_model=EmailConfigRead)
 async def update_program_email(
     program_id: UUID,
     payload: EmailConfigUpdate,

@@ -85,8 +85,8 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
   correspondence. Attachments intentionally disabled on this path.
 - ✅ **Report lifecycle** — `new → triaging → duplicate / informative / accepted / resolved`
   with staff assignment; status changes are notified.
-- ✅ **Researcher edit lock** — reporters can edit their own reports only while the status
-  is `new`/`triaging`; locked afterwards (staff-side edits unaffected).
+- ✅ **Researcher edit lock** — reporters can edit their own reports (including CWE type;
+  optional fields can be cleared) only while the status is `new`/`triaging`; locked afterwards.
 - ✅ **Reference codes** — every report carries a short code (first 8 hex of its id) shown
   on the public confirmation, the staff reports table (with search by ref/title/researcher),
   and the report detail header.
@@ -137,7 +137,7 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
   test-send. Templates drive both emails and Telegram texts.
 - ✅ **Transactional account emails** — password reset and email-change verification links
   via the same SMTP configuration.
-- ✅ **Graceful degradation** — no channels configured ⇒ notifications are logged and API
+- ✅ **Graceful degradation** — no channels configured ⇒ notifications are skipped and API
   requests always succeed; SMTP/Telegram failures never break the triggering request.
 - ✅ **Background job** — APScheduler sweeps expired invites hourly.
 
@@ -149,15 +149,15 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
 
 ## Developer experience & infrastructure
 
-- ✅ **FastAPI + SQLAlchemy 2.0 (async) + Alembic** — 6 ordered, up/down-verified
-  migrations; SQLite-compatible dev mode (`dev.db`) and Postgres in production.
+- ✅ **FastAPI + SQLAlchemy 2.0 (async) + Alembic** — 7 ordered, up/down-verified
+  migrations; Postgres in production, in-memory SQLite for the test suite.
 - ✅ **uv dependency management** — `pyproject.toml` + committed `uv.lock`;
   `uv sync` / `uv run`; Docker installs from the lockfile (`--frozen --no-dev`).
-- ✅ **Next.js 14 App Router frontend** — TypeScript, Tailwind, hand-rolled shadcn-style
+- ✅ **Next.js 16 App Router frontend** — TypeScript, Tailwind, hand-rolled shadcn-style
   components (no radix), standalone output for Docker.
-- ✅ **docker-compose deployment** — postgres + backend (migrate → seed → serve) + frontend
-  + nginx; `docker compose up` target with a 5-minute onboarding story.
-- ✅ **nginx reverse proxy** — `/api` to the backend, everything else to the frontend.
+- ✅ **docker-compose deployment** — postgres + backend (migrate → seed → serve) + frontend;
+  put your own reverse proxy (Dokploy/Traefik, Caddy, …) in front, routing `/api` to the
+  backend and everything else to the frontend.
 - ✅ **Idempotent seed** — default org, super admin, demo program with example scope,
   platform settings, email templates.
 - ✅ **Test suite** — 33 tests on in-memory SQLite: end-to-end API flows (invites, reports,

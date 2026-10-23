@@ -1,5 +1,4 @@
 import logging
-
 import uuid
 
 from fastapi import Depends, Response
@@ -9,6 +8,7 @@ from fastapi_users.db import SQLAlchemyUserDatabase
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
+from app.constants import RESEARCHER_COOKIE, STAFF_COOKIE
 from app.database import get_session
 from app.models import Researcher, StaffUser
 
@@ -26,31 +26,31 @@ class _AccountEmailsMixin:
 
         link = f"{settings.frontend_url}/reset-password?token={token}&kind={self.user_kind}"
         sent = await send_user_email(
-                None,
-                user.email,
-                "Reset your password",
-                (
+            None,
+            user.email,
+            "Reset your password",
+            (
                 "We received a request to reset your password.\n\n"
                 f"Open this link to choose a new one (valid for 1 hour):\n{link}\n\n"
                 "If you didn't request this, you can safely ignore this email."
-                ),
+            ),
         )
         if not sent:
             logger.warning(
                 "password reset email for %s not sent: platform SMTP is not configured", user.email
-        )
+            )
 
 
 class StaffManager(_AccountEmailsMixin, UUIDIDMixin, BaseUserManager[StaffUser, uuid.UUID]):
     user_kind = "staff"
-    reset_password_token_secret = settings.secret
-    verification_token_secret = settings.secret
+    reset_password_token_secret = settings.staff_secret
+    verification_token_secret = settings.staff_secret
 
 
 class ResearcherManager(_AccountEmailsMixin, UUIDIDMixin, BaseUserManager[Researcher, uuid.UUID]):
     user_kind = "researchers"
-    reset_password_token_secret = settings.secret
-    verification_token_secret = settings.secret
+    reset_password_token_secret = settings.researcher_secret
+    verification_token_secret = settings.researcher_secret
 
 
 async def get_staff_db(session: AsyncSession = Depends(get_session)):
@@ -77,7 +77,7 @@ def _make_backend(name: str, cookie_name: str, secret: str) -> AuthenticationBac
         cookie_secure=settings.cookie_secure,
         cookie_samesite="lax",
         cookie_domain=settings.cookie_domain,
-)
+    )
 
     def get_strategy() -> JWTStrategy:
         return JWTStrategy(secret=secret, lifetime_seconds=settings.jwt_lifetime_seconds)
@@ -85,14 +85,13 @@ def _make_backend(name: str, cookie_name: str, secret: str) -> AuthenticationBac
     return AuthenticationBackend(name=name, transport=transport, get_strategy=get_strategy)
 
 
-staff_backend = _make_backend("staff-cookie", "bb_staff", settings.staff_secret)
-researcher_backend = _make_backend("researcher-cookie", "bb_researcher", settings.researcher_secret)
+staff_backend = _make_backend("staff-cookie", STAFF_COOKIE, settings.staff_secret)
+researcher_backend = _make_backend("researcher-cookie", RESEARCHER_COOKIE, settings.researcher_secret)
 
 staff_users = FastAPIUsers[StaffUser, uuid.UUID](get_staff_manager, [staff_backend])
 researcher_users = FastAPIUsers[Researcher, uuid.UUID](get_researcher_manager, [researcher_backend])
 
 current_staff = staff_users.current_user(active=True)
-current_researcher = researcher_users.current_user(active=True)
 
 
 def set_auth_cookie(response: Response, backend: AuthenticationBackend, token: str) -> None:
@@ -107,4 +106,4 @@ def set_auth_cookie(response: Response, backend: AuthenticationBackend, token: s
         samesite=t.cookie_samesite,
         secure=t.cookie_secure,
         domain=t.cookie_domain,
-)
+    )

@@ -62,15 +62,18 @@ def _allow(
     return False, max(1, int(start + window - now))
 
 
-def rate_limit(scope: str, limit: str):
-    """Dependency factory: fixed-window limit per client IP within the given scope."""
+def rate_limit(scope: str, limit: str, key_param: str | None = None):
+    """Dependency factory: fixed-window limit per client IP (and per `key_param` path value, if given)."""
     max_requests, window = parse_limit(limit)
     bucket_key = (scope, max_requests, window)
 
     async def checker(request: Request) -> None:
         # Look the bucket up per request so reset_rate_limiters() actually resets.
         bucket = _state.setdefault(bucket_key, {})
-        allowed, retry_after = _allow(bucket, client_ip(request), max_requests, window)
+        key = client_ip(request)
+        if key_param:
+            key = f"{key}|{request.path_params.get(key_param, '')}"
+        allowed, retry_after = _allow(bucket, key, max_requests, window)
         if not allowed:
             raise HTTPException(
                 429,

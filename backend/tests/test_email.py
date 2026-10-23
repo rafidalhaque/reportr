@@ -27,7 +27,7 @@ async def test_platform_email_settings_crud(admin_client, plain_client):
     assert get.json()["enabled"] is False
     assert get.json()["smtp_password_set"] is False
 
-    put = await admin_client.put(
+    put = await admin_client.patch(
         "/api/settings/email",
         json={
             "enabled": True,
@@ -48,13 +48,13 @@ async def test_platform_email_settings_crud(admin_client, plain_client):
     assert "s3cret" not in str(body)  # password is never returned
 
     # omitted password keeps the stored one; non-super-admins are denied
-    put2 = await admin_client.put(
+    put2 = await admin_client.patch(
         "/api/settings/email", json={"enabled": True, "smtp_host": "smtp.platform.test"}
     )
     assert put2.json()["smtp_password_set"] is True
     assert (await plain_client.get("/api/settings/email")).status_code == 403
     assert (
-        await plain_client.put("/api/settings/email", json={"enabled": True})
+        await plain_client.patch("/api/settings/email", json={"enabled": True})
     ).status_code == 403
 
 
@@ -100,7 +100,7 @@ async def test_notification_uses_program_override_then_platform(
     admin_client, client, make_client, captured
 ):
     # platform SMTP enabled
-    put = await admin_client.put(
+    put = await admin_client.patch(
         "/api/settings/email",
         json={"enabled": True, "smtp_host": "smtp.platform.test",
               "from_email": "b@platform.test", "notify_email": "triage@platform.test"},
@@ -109,7 +109,7 @@ async def test_notification_uses_program_override_then_platform(
     program_id = client.ids["program_id"]
 
     # program override enabled — it must win over the platform config
-    put = await admin_client.put(
+    put = await admin_client.patch(
         f"/api/programs/{program_id}/email-settings",
         json={"enabled": True, "smtp_host": "smtp.program.test",
               "from_email": "b@program.test", "notify_email": "triage@program.test"},
@@ -144,7 +144,7 @@ async def test_notification_uses_program_override_then_platform(
     assert "new → triaging" in subject2
 
     # disable the program override → falls back to the platform config
-    await admin_client.put(
+    await admin_client.patch(
         f"/api/programs/{program_id}/email-settings",
         json={"enabled": False, "smtp_host": "smtp.program.test", "notify_email": "triage@program.test"},
     )
@@ -175,7 +175,7 @@ async def test_template_test_send_requires_platform_smtp(admin_client, client):
     assert denied.status_code == 400
     assert "not configured" in denied.json()["detail"]
 
-    await admin_client.put(
+    await admin_client.patch(
         "/api/settings/email",
         json={"enabled": True, "smtp_host": "smtp.platform.test",
               "from_email": "b@platform.test", "notify_email": "triage@platform.test"},

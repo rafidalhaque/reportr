@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import cweList from "@/lib/cwe_list.json";
 
 export default function ResearcherReportPage() {
   const { me, loading: meLoading } = useMe("researcher");
@@ -38,6 +39,7 @@ export default function ResearcherReportPage() {
   const [severity, setSeverity] = useState("medium");
   const [affectedAsset, setAffectedAsset] = useState("");
   const [cvss, setCvss] = useState("");
+  const [cweId, setCweId] = useState("");
   const [description, setDescription] = useState("");
   const [reproSteps, setReproSteps] = useState("");
   const [attachments, setAttachments] = useState<UploadOut[]>([]);
@@ -70,6 +72,7 @@ export default function ResearcherReportPage() {
     setSeverity(report.severity);
     setAffectedAsset(report.affected_asset ?? "");
     setCvss(report.cvss ?? "");
+    setCweId(report.cwe_id ?? "");
     setDescription(report.description);
     setReproSteps(report.repro_steps);
     setAttachments(report.attachments.map((a) => ({ key: a.key, name: a.name, url: a.url })));
@@ -100,8 +103,9 @@ export default function ResearcherReportPage() {
       const updated = await apiPatch<Report>(`/reports/${reportId}`, {
         title,
         severity,
-        cvss: cvss || undefined,
-        affected_asset: affectedAsset || undefined,
+        cvss: cvss || null,
+        cwe_id: cweId || null,
+        affected_asset: affectedAsset || null,
         description,
         repro_steps: reproSteps,
         attachments: attachments.map(({ key, name }) => ({ key, name })),
@@ -223,6 +227,18 @@ export default function ResearcherReportPage() {
                       onChange={(e) => setAffectedAsset(e.target.value)}
                     />
                   </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-cwe">Type of bug</Label>
+                  <Select id="edit-cwe" value={cweId} onChange={(e) => setCweId(e.target.value)}>
+                    <option value="">Not sure / other</option>
+                    {cweList.map((cwe) => (
+                      <option key={cwe.id} value={cwe.id}>
+                        {cwe.id} — {cwe.name}
+                      </option>
+                    ))}
+                  </Select>
                 </div>
 
                 <div className="space-y-1.5">

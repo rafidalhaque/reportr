@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MailCheck, Loader2 } from "lucide-react";
 import { apiPost, errMessage } from "@/lib/api";
@@ -21,6 +21,11 @@ export default function ForgotPasswordPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
+
+  // The login pages link here with ?kind=staff|researchers.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("kind") === "researchers") setKind("researchers");
+  }, []);
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();

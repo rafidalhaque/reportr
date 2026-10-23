@@ -27,7 +27,7 @@ export default function LandingPage() {
 
       <main className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
         <section className="mx-auto max-w-2xl text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-200">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:ring-indigo-900">
             <ShieldCheck className="h-3.5 w-3.5" />
             Coordinated vulnerability disclosure
           </div>

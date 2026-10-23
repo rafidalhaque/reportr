@@ -228,7 +228,7 @@ class ReportCreate(BaseModel):
     cvss: str | None = Field(default=None, max_length=64)
     cwe_id: str | None = Field(default=None, max_length=16)  # must exist in the CWE catalog
     repro_steps: str = ""
-    affected_asset: str | None = None
+    affected_asset: str | None = Field(default=None, max_length=200)
     attachments: list[AttachmentIn] = []
 
 
@@ -236,9 +236,10 @@ class ReportUpdate(BaseModel):
     title: str | None = Field(default=None, max_length=200)
     description: str | None = None
     severity: Severity | None = None
-    cvss: str | None = None
+    cvss: str | None = Field(default=None, max_length=64)
+    cwe_id: str | None = Field(default=None, max_length=16)
     repro_steps: str | None = None
-    affected_asset: str | None = None
+    affected_asset: str | None = Field(default=None, max_length=200)
     attachments: list[AttachmentIn] | None = None
 
 
@@ -320,7 +321,7 @@ class PublicReportCreate(BaseModel):
     cvss: str | None = Field(default=None, max_length=64)
     cwe_id: str | None = Field(default=None, max_length=16)  # must exist in the CWE catalog
     repro_steps: str = ""
-    affected_asset: str | None = None
+    affected_asset: str | None = Field(default=None, max_length=200)
     email: EmailStr | None = None  # optional contact; omit to submit anonymously
 
 

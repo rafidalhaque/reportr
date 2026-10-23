@@ -1,6 +1,6 @@
 # Open Source Multi-Program Bug Bounty Platform — Spec
 
-**Status**: Draft
+**Status**: Living draft (shipped features: see [features.md](features.md))
 **Scope**: Single-org self-hosted MVP, `org_id`-ready for future SaaS layer
 
 ---
@@ -22,12 +22,12 @@ Self-hosted, invite-only bug bounty platform supporting multiple concurrent prog
 
 - **Backend**: FastAPI + SQLAlchemy 2.0 (async) + Alembic (migrations)
 - **Auth**: `fastapi-users` base, extended with custom `Invite` / `ProgramRole` tables. Invite-token → account activation → JWT/cookie session.
-- **Frontend**: Next.js (App Router) + TypeScript + Tailwind + shadcn/ui
+- **Frontend**: Next.js (App Router) + TypeScript + Tailwind (shadcn-style components, hand-rolled)
 - **DB**: Postgres
-- **Background jobs**: APScheduler (in-process) — invite expiry, digest notifications. No Celery/Redis unless volume demands it.
-- **Notifications**: Telegram bot (reuse frontdesk pattern), abstracted behind a notification interface so Slack/Discord/email backends can be swapped in by adopters.
+- **Background jobs**: APScheduler (in-process) — invite expiry (digest notifications: not built). No Celery/Redis unless volume demands it.
+- **Notifications**: Telegram bot and SMTP email (platform-wide with per-program override), template-driven, behind one notification service so other backends (Slack/Discord) can be added.
 - **Storage**: AWS S3 for report attachments, configured via access/secret keys (+ region), no bundled object store in docker-compose. Any S3-compatible service (MinIO, R2, Spaces) works by setting `S3_ENDPOINT`. App talks to storage via S3 API only, never local disk — keeps self-host and future SaaS paths identical. With no keys configured, attachments are disabled and the rest of the platform runs normally.
-- **Deploy**: docker-compose (`fastapi`, `postgres`, `nextjs`, `nginx`, `minio`), Let's Encrypt/certbot. Target: `docker-compose up` → working instance in under 5 minutes (seed/demo data included) — this is the onboarding story for OSS adopters.
+- **Deploy**: docker-compose (`backend`, `postgres`, `frontend`); TLS and routing (`/api` → backend, rest → frontend) via the operator's own reverse proxy (Dokploy/Traefik, Caddy, …). Target: `docker-compose up` → working instance in under 5 minutes (seed/demo data included) — this is the onboarding story for OSS adopters.
 
 **Core architectural decision**: two intake paths (direct invite by staff, public application form) converge into the same triage → invite → membership pipeline. No duplicate logic between paths.
 
@@ -40,15 +40,17 @@ All tables carry `org_id` (nullable/defaulted to a single org row for MVP) — c
 | Table | Key fields |
 |---|---|
 | `orgs` | *(MVP: single row)* name, slug — placeholder for future multi-tenancy |
-| `programs` | org_id, name, slug, scope/rules (markdown), status (draft/active/paused/closed), visibility (public/private) |
+| `programs` | org_id, name, slug, description, scope/rules (markdown), status (draft/active/paused/closed), visibility (public/private), public_reporting |
+| `program_scope` | program_id, target, description, in_scope, severity_guide |
 | `staff_users` | org_id, email, name, global_role |
 | `researchers` | email, name, portfolio links, global status (applicant/active/banned) |
 | `applications` | researcher email, optional program_id, message/portfolio, status (pending/approved/rejected) |
 | `invites` | program_id, email, token (random, single-use), expires_at, accepted_at |
 | `program_memberships` | researcher_id, program_id — grants access to a program's scope + submission form |
 | `program_roles` | staff_id, program_id, role (owner/triager/viewer) |
-| `reports` | program_id, researcher_id, title, description, severity, cvss, repro_steps, attachments (S3 object keys, not blobs), affected_asset, status (new/triaging/duplicate/informative/accepted/resolved), assigned staff |
-| `report_comments` | report_id, author_id, body, internal_only (bool — staff-only notes) |
+| `reports` | program_id, researcher_id (null for public-form reports), submitter_email, title, description, severity, cvss, cwe_id/cwe_name, repro_steps, attachments (S3 object keys, not blobs), affected_asset, status (new/triaging/duplicate/informative/accepted/resolved), assigned staff |
+| `report_comments` | report_id, author_staff_id / author_researcher_id, body, internal_only (bool — staff-only notes), attachments |
+| `platform_settings`, `platform_email_settings`, `program_email_settings`, `email_templates` | platform flags, SMTP configuration (platform + per-program override), notification templates |
 | `payouts` *(phase 2)* | report_id, amount, status (pending/approved/paid), method |
 | `audit_log` *(phase 3)* | actor_id, action, target, timestamp, diff |
 
@@ -150,7 +152,7 @@ No cross-researcher visibility (can't see other researchers' reports/comments on
 ### Phase 2 — Public-facing
 
 - Public program listing page (open programs)
-- Public "apply to join" form (unauth)
+- Public "apply to join" form (unauth) — shipped, with per-IP rate limiting
 - Optional public disclosure page for resolved+disclosed reports (staff toggle per report)
 
 ### Phase 3 — Ops/Compliance
@@ -158,7 +160,6 @@ No cross-researcher visibility (can't see other researchers' reports/comments on
 - Audit log (role changes, status changes, payout approvals — gives `auditor` role teeth)
 - SLA tracking (time-to-first-response, time-to-resolution, configurable per-program targets)
 - CSV/JSON export (reports, payouts)
-- Rate limiting on public application form
 
 ---
 

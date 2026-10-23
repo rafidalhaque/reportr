@@ -146,7 +146,7 @@ function PlatformEmailPanel() {
     setSaved(false);
     try {
       setConfig(
-        await apiPut<EmailConfigSettings>("/settings/email", {
+        await apiPatch<EmailConfigSettings>("/settings/email", {
           enabled: config.enabled,
           smtp_host: config.smtp_host || null,
           smtp_port: config.smtp_port || null,
@@ -392,11 +392,15 @@ function EmailTemplatesPanel() {
           Email templates
         </CardTitle>
         <CardDescription>
-          Placeholders: <code>{"{{program}}"}</code>, <code>{"{{reference}}"}</code>,{" "}
-          <code>{"{{reporter}}"}</code>, <code>{"{{severity}}"}</code>,{" "}
-          <code>{"{{status}}"}</code>, <code>{"{{title}}"}</code>, <code>{"{{email}}"}</code>,{" "}
-          <code>{"{{comment}}"}</code>. Templates apply to notification emails and Telegram
-          texts.
+          Placeholders depend on the event: <code>{"{{program}}"}</code>,{" "}
+          <code>{"{{reference}}"}</code>, <code>{"{{title}}"}</code>, <code>{"{{severity}}"}</code>,{" "}
+          <code>{"{{reporter}}"}</code>, <code>{"{{cwe}}"}</code>, <code>{"{{description}}"}</code>,{" "}
+          <code>{"{{old_status}}"}</code>, <code>{"{{new_status}}"}</code>,{" "}
+          <code>{"{{author}}"}</code>, <code>{"{{author_kind}}"}</code>, <code>{"{{internal}}"}</code>,{" "}
+          <code>{"{{comment}}"}</code>, <code>{"{{email}}"}</code>, <code>{"{{for_program}}"}</code>,{" "}
+          <code>{"{{message}}"}</code>, <code>{"{{portfolio}}"}</code>, <code>{"{{expires}}"}</code>.
+          Use the preview to see which apply. Templates apply to notification emails and
+          Telegram texts.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

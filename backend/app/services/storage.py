@@ -1,4 +1,4 @@
-"""Attachment storage over the S3 API (todo: AWS S3 by default, MinIO/R2/Spaces via config).
+"""Attachment storage over the S3 API (AWS S3 by default, MinIO/R2/Spaces via config).
 
 Credentials come from S3_ACCESS_KEY / S3_SECRET_KEY. With S3_ENDPOINT empty the botocore
 defaults are used (real AWS S3, virtual-host addressing); a custom endpoint switches to

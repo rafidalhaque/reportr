@@ -23,7 +23,7 @@ def mail_capture(monkeypatch):
 
 
 async def _enable_platform_smtp(admin_client):
-    put = await admin_client.put(
+    put = await admin_client.patch(
         "/api/settings/email",
         json={
             "enabled": True,

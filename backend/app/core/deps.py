@@ -53,8 +53,3 @@ async def get_actor(
         return Actor("researcher", researcher=researcher)
     raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not authenticated")
 
-
-async def get_current_staff_actor(actor: Actor = Depends(get_actor)) -> StaffUser:
-    if actor.kind != "staff":
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Staff account required")
-    return actor.staff
