@@ -102,7 +102,8 @@ Everything is env-driven — see [.env.example](.env.example). Highlights:
 
 - `SECRET` — auth signing key (change in prod)
 - `CORS_ORIGINS` — browser origins allowed to send credentials
-- `FRONTEND_URL` — public web URL used in password-reset and email-change links
+- `FRONTEND_URL` — **set this to your public web URL** (e.g. `https://reportr.example.com`). It is used in
+  password-reset, email-change and invite emails; left at the default, those links point at `localhost`
 - `S3_ACCESS_KEY` / `S3_SECRET_KEY` / `S3_BUCKET` / `S3_REGION` — AWS credentials for attachment storage (unset them to disable attachments)
 - `S3_ENDPOINT` — optional; point at MinIO/R2/Spaces instead of real AWS S3
 - `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` — optional notifications for new applications,

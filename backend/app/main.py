@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
@@ -30,6 +31,11 @@ async def expire_invites() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if settings.env == "prod" and "localhost" in settings.frontend_url:
+        logging.getLogger("startup").warning(
+            "FRONTEND_URL is %r: password-reset, email-change and invite links will point there. "
+            "Set FRONTEND_URL to your public web URL.", settings.frontend_url,
+        )
     if settings.seed_on_start:
         from app.seed import run_seed
 
