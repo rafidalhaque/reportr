@@ -13,12 +13,12 @@ cp .env.example .env        # defaults are fine for local evaluation
 docker compose up --build
 ```
 
-~5 minutes later you have:
+There is no bundled reverse proxy: put your own (Dokploy/Traefik, Caddy, ...) in front, routing `/api` to the backend and everything else to the frontend, on one origin. You get:
 
 | Service | Where |
 |---|---|
-| Web app | http://localhost:8080 |
-| API docs (OpenAPI) | http://localhost:8080/api/docs |
+| Web app | `frontend:3000` (route `/` here) |
+| API + docs (OpenAPI) | `backend:8000` (route `/api` here, docs at `/api/docs`) |
 | Postgres | internal, volume-backed |
 
 Attachments live in **AWS S3** (via `S3_ACCESS_KEY` / `S3_SECRET_KEY`) — set the `S3_*`
