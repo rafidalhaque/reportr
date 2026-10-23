@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* Dark-theme base (todo #11): the .dark class on <html> is set by the inline
    script in layout.tsx before paint. Headings get a global rule so page files
