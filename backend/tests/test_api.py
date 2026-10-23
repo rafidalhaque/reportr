@@ -611,3 +611,39 @@ async def test_leaderboard_stats_and_hall_of_fame(admin_client, client, make_cli
     # private programs have no public hall of fame
     await admin_client.patch(f"/api/programs/{program_id}", json={"visibility": "private"})
     assert (await client.get(f"/api/public/programs/{slug}/hall-of-fame")).status_code == 404
+
+
+async def test_internal_visibility(admin_client, plain_client, client, make_client):
+    created = await admin_client.post(
+        "/api/programs", json={"name": "Internal One", "status": "active", "visibility": "internal"}
+    )
+    assert created.status_code == 201, created.text
+    pid = created.json()["id"]
+    private = (await admin_client.post("/api/programs", json={"name": "Hidden", "status": "active"})).json()
+
+    # any logged-in staff (even with no program role) can list/read it and its scope, but not its reports
+    ids = [p["id"] for p in (await plain_client.get("/api/programs")).json()]
+    assert pid in ids and private["id"] not in ids
+    assert (await plain_client.get(f"/api/programs/{pid}")).status_code == 200
+    assert (await plain_client.get(f"/api/programs/{pid}/scope")).status_code == 200
+    assert (await plain_client.get(f"/api/programs/{private['id']}")).status_code == 403
+    assert (await plain_client.get(f"/api/programs/{pid}/stats")).status_code == 403
+
+    # a non-member researcher can view it but not submit
+    invite = (await admin_client.post(
+        f"/api/programs/{client.ids['program_id']}/invites", json={"email": "int@test.com"}
+    )).json()
+    researcher = await make_client()
+    await researcher.post("/api/auth/researchers/register", json={"token": invite["token"], "password": "res12345"})
+    assert pid in [p["id"] for p in (await researcher.get("/api/programs")).json()]
+    assert private["id"] not in [p["id"] for p in (await researcher.get("/api/programs")).json()]
+    assert (await researcher.get(f"/api/programs/{pid}")).status_code == 200
+    assert (await researcher.get(f"/api/programs/{pid}/scope")).status_code == 200
+    assert (await researcher.get(f"/api/programs/{private['id']}")).status_code == 404
+    submit = await researcher.post("/api/reports", json={"program_id": pid, "title": "x"})
+    assert submit.status_code == 403
+
+    # never on public pages
+    anon = await make_client()
+    assert pid not in [p["id"] for p in (await anon.get("/api/public/programs")).json()]
+    assert (await anon.get(f"/api/programs/{pid}")).status_code == 401

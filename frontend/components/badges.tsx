@@ -51,7 +51,7 @@ export function ProgramStatusBadge({ status }: { status: string }) {
 
 export function VisibilityBadge({ visibility }: { visibility: string }) {
   return (
-    <Badge color={visibility === "public" ? "indigo" : "slate"} className="capitalize">
+    <Badge color={visibility === "public" ? "indigo" : visibility === "internal" ? "violet" : "slate"} className="capitalize">
       {visibility}
     </Badge>
   );

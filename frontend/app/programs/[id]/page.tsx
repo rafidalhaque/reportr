@@ -106,9 +106,11 @@ export default function ProgramPage() {
   const isOrgAdmin = me.global_role === "super_admin" || me.global_role === "org_admin";
 
   const canManageInvites = isOrgAdmin || programRole === "owner";
+  // Internal programs are readable by all staff, but reports need view access (global or program role).
+  const canViewReports = isOrgAdmin || me.global_role === "auditor" || programRole !== null;
 
   const tabs: { key: TabKey; label: string }[] = [
-    { key: "reports", label: "Reports" },
+    ...(canViewReports ? [{ key: "reports" as TabKey, label: "Reports" }] : []),
     { key: "scope", label: "Scope" },
     ...(canManageInvites
       ? [
@@ -121,6 +123,7 @@ export default function ProgramPage() {
     { key: "settings", label: "Settings" },
     { key: "api", label: "Public API" },
   ];
+  const active = tabs.some((t) => t.key === tab) ? tab : tabs[0].key;
 
   return (
     <AppShell me={me}>
@@ -154,11 +157,11 @@ export default function ProgramPage() {
                     type="button"
                     onClick={() => setTab(t.key)}
                     className={`whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors ${
-                      tab === t.key
+                      active === t.key
                         ? "border-indigo-600 text-indigo-600"
                         : "border-transparent text-slate-500 dark:text-slate-400 hover:border-slate-300 hover:text-slate-700"
                     }`}
-                    aria-current={tab === t.key ? "page" : undefined}
+                    aria-current={active === t.key ? "page" : undefined}
                   >
                     {t.label}
                   </button>
@@ -166,16 +169,16 @@ export default function ProgramPage() {
               </nav>
             </div>
 
-            {tab === "reports" && <ReportsTab programId={programId} />}
-            {tab === "scope" && <ScopeTab programId={programId} />}
-            {tab === "invites" && <InvitesTab programId={programId} />}
-            {tab === "members" && <MembersTab programId={programId} />}
-            {tab === "applications" && <ApplicationsTab programId={programId} />}
-            {tab === "roles" && isOrgAdmin && <RolesTab programId={programId} />}
-            {tab === "settings" && (
+            {active === "reports" && <ReportsTab programId={programId} />}
+            {active === "scope" && <ScopeTab programId={programId} />}
+            {active === "invites" && <InvitesTab programId={programId} />}
+            {active === "members" && <MembersTab programId={programId} />}
+            {active === "applications" && <ApplicationsTab programId={programId} />}
+            {active === "roles" && isOrgAdmin && <RolesTab programId={programId} />}
+            {active === "settings" && (
               <SettingsTab program={program} onSaved={setProgram} me={me} />
             )}
-            {tab === "api" && <ApiDocsTab program={program} />}
+            {active === "api" && <ApiDocsTab program={program} />}
           </>
         )}
       </main>
@@ -954,7 +957,7 @@ function ApiDocsTab({ program }: { program: ProgramDetail }) {
   "program_name": "${program.name}",
   "program_slug": "${program.slug}",
   "description": "${program.description.replace(/"/g, '\\"').slice(0, 80)}",
-  "scope_markdown": "…${program.visibility === "public" ? "(included — program is public)" : "(hidden — program is private)"}…",
+  "scope_markdown": "…${program.visibility === "public" ? "(included — program is public)" : "(hidden — program is not public)"}…",
   "scope_entries": [ … ]
 }`;
 

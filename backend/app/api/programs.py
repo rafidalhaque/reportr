@@ -90,27 +90,17 @@ async def create_program(
 @router.get("", response_model=list[ProgramRead])
 async def list_programs(actor=Depends(get_actor), session: AsyncSession = Depends(get_session)):
     """Staff: super_admin/org_admin/auditor see all, others see programs they hold a role on.
-    Researchers: programs they hold a membership in."""
+    Researchers: programs they hold a membership in. Everyone logged in also sees internal programs."""
     query = select(Program).order_by(Program.created_at.desc())
+    internal = Program.visibility == "internal"  # visible to every logged-in account
     if actor.kind == "researcher":
-        programs = (
-            await session.scalars(
-                query.join(ProgramMembership, ProgramMembership.program_id == Program.id).where(
-                    ProgramMembership.researcher_id == actor.researcher.id
-                )
-            )
-        ).all()
-        return list(programs)
+        member_of = select(ProgramMembership.program_id).where(ProgramMembership.researcher_id == actor.researcher.id)
+        return list((await session.scalars(query.where(internal | Program.id.in_(member_of)))).all())
     user = actor.staff
     if has_global_role(user, "org_admin", "auditor"):
-        programs = (await session.scalars(query)).all()
-    else:
-        programs = (
-            await session.scalars(
-                query.join(ProgramRole, ProgramRole.program_id == Program.id).where(ProgramRole.staff_id == user.id)
-            )
-        ).all()
-    return list(programs)
+        return list((await session.scalars(query)).all())
+    has_role = select(ProgramRole.program_id).where(ProgramRole.staff_id == user.id)
+    return list((await session.scalars(query.where(internal | Program.id.in_(has_role)))).all())
 
 
 @router.get("/{program_id}", response_model=ProgramDetail)
@@ -123,15 +113,17 @@ async def get_program(program_id: UUID, actor=Depends(get_actor), session: Async
                 ProgramMembership.program_id == program_id,
             )
         )
-        if program is None or membership is None:
+        if program is None or (membership is None and program.visibility != "internal"):
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Program not found")
         return program
     user = actor.staff
-    if not await has_program_perm(session, user, program_id, ACTION_VIEW_REPORTS):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Insufficient permissions for this program")
     program = await session.get(Program, program_id)
     if program is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Program not found")
+    if program.visibility != "internal" and not await has_program_perm(
+        session, user, program_id, ACTION_VIEW_REPORTS
+    ):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Insufficient permissions for this program")
     return program
 
 

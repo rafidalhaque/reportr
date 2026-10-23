@@ -31,7 +31,11 @@ _FALSE_VALUES = {"false", "no", "n", "0", "out", "out-of-scope", "outscope", "ex
 
 
 async def _authorized(session: AsyncSession, actor, program_id: UUID) -> None:
-    """Staff need view_reports; researchers need membership (mirrors program detail)."""
+    """Staff need view_reports; researchers need membership (mirrors program detail).
+    Internal programs are readable by any logged-in account."""
+    program = await session.get(Program, program_id)
+    if program is not None and program.visibility == "internal":
+        return
     if actor.kind == "staff":
         if not await has_program_perm(session, actor.staff, program_id, ACTION_VIEW_REPORTS):
             raise HTTPException(403, "Insufficient permissions for this program")

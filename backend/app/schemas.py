@@ -90,7 +90,7 @@ class ProgramCreate(BaseModel):
     description: str = ""
     scope_markdown: str = ""
     status: Literal["draft", "active", "paused", "closed"] = "draft"
-    visibility: Literal["public", "private"] = "private"
+    visibility: Literal["public", "internal", "private"] = "private"
     public_reporting: bool = False
 
 
@@ -99,7 +99,7 @@ class ProgramUpdate(BaseModel):
     description: str | None = None
     scope_markdown: str | None = None
     status: Literal["draft", "active", "paused", "closed"] | None = None
-    visibility: Literal["public", "private"] | None = None
+    visibility: Literal["public", "internal", "private"] | None = None
     public_reporting: bool | None = None
 
 

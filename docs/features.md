@@ -50,13 +50,16 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
 
 - ✅ **Program CRUD** — create (org admin+), edit (manage-scope permission), auto-generated
   unique slugs, description, status lifecycle (draft / active / paused / closed), visibility
-  (public / private).
+  (public / internal / private).
 - ✅ **Public report form toggle** — per program, on the Settings tab with a copyable form
   link; the form only accepts submissions while the program is active.
 - ✅ **Program dashboard stats** — total reports, breakdown by status, pending
   applications, member count.
 - ✅ **Role-filtered program listing** — org-level roles see all programs; ordinary staff
   see only programs they hold a role on; researchers see their memberships.
+- ✅ **Internal visibility** — `internal` programs are readable (details + scope) by any
+  logged-in researcher or staff member, never listed publicly; reports, invites and
+  stats stay role-gated and submission still needs membership.
 - ✅ **Public API documentation tab** — per-program view of the public endpoints with live
   URLs, copy-ready `curl` examples, response samples, rate-limit and error-contract notes.
 - ✅ **`org_id` forward compatibility** — every domain table carries the column for the

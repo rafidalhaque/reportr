@@ -8,11 +8,11 @@ import { apiGet, apiPost, errMessage } from "@/lib/api";
 import { SEVERITIES } from "@/lib/constants";
 import { titleCase } from "@/lib/utils";
 import cweList from "@/lib/cwe_list.json";
-import type { ProgramDetail, Report, ScopeEntry, UploadOut } from "@/lib/types";
+import type { Profile, ProgramDetail, Report, ScopeEntry, UploadOut } from "@/lib/types";
 import { useMe } from "@/components/auth";
 import { AppShell, FullPageLoader } from "@/components/shell";
 import { ErrorAlert, InfoAlert } from "@/components/alerts";
-import { ProgramStatusBadge } from "@/components/badges";
+import { ProgramStatusBadge, VisibilityBadge } from "@/components/badges";
 import { AttachmentsPicker } from "@/components/attachments";
 import { CvssCalculator } from "@/components/cvss-calculator";
 import { Markdown } from "@/components/markdown";
@@ -32,6 +32,7 @@ export default function ResearcherProgramPage() {
   const [program, setProgram] = useState<ProgramDetail | null>(null);
   const [scopeEntries, setScopeEntries] = useState<ScopeEntry[]>([]);
   const [error, setError] = useState("");
+  const [isMember, setIsMember] = useState(true);
 
   // Report form
   const [title, setTitle] = useState("");
@@ -53,6 +54,10 @@ export default function ResearcherProgramPage() {
     apiGet<ScopeEntry[]>(`/programs/${programId}/scope`)
       .then(setScopeEntries)
       .catch(() => setScopeEntries([])); // scope list is optional sugar; markdown still renders
+    // Internal programs are viewable without membership, but only members can submit.
+    apiGet<Profile>("/me/profile")
+      .then((p) => setIsMember(p.memberships.some((m) => m.program_id === programId)))
+      .catch(() => setIsMember(true));
   }, [programId]);
 
   if (loading || !me) return <FullPageLoader />;
@@ -106,6 +111,7 @@ export default function ResearcherProgramPage() {
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">{program.name}</h1>
           <ProgramStatusBadge status={program.status} />
+          <VisibilityBadge visibility={program.visibility} />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
@@ -169,6 +175,12 @@ export default function ResearcherProgramPage() {
             </CardContent>
           </Card>
 
+          {!isMember ? (
+            <InfoAlert className="h-fit">
+              This is an internal program: you can read its scope, but only invited members can
+              submit reports. Ask the program team for an invite.
+            </InfoAlert>
+          ) : (
           <Card>
             <CardHeader>
               <CardTitle>Submit a report</CardTitle>
@@ -290,6 +302,7 @@ export default function ResearcherProgramPage() {
               </form>
             </CardContent>
           </Card>
+          )}
         </div>
       </main>
     </AppShell>

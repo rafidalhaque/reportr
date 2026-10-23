@@ -49,7 +49,7 @@ class Program(Base):
     description: Mapped[str] = mapped_column(Text, default="")
     scope_markdown: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(32), default="draft")  # draft/active/paused/closed
-    visibility: Mapped[str] = mapped_column(String(32), default="private")  # public/private
+    visibility: Mapped[str] = mapped_column(String(32), default="private")  # public/internal/private
     public_reporting: Mapped[bool] = mapped_column(Boolean, default=False)  # unauthenticated report form
     created_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("staff_users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

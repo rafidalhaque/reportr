@@ -11,7 +11,7 @@ export type ReportStatus =
   | "accepted"
   | "resolved";
 export type ProgramStatus = "draft" | "active" | "paused" | "closed";
-export type Visibility = "public" | "private";
+export type Visibility = "public" | "internal" | "private";
 
 export interface Me {
   kind: "staff" | "researcher";
