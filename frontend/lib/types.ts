@@ -277,3 +277,13 @@ export interface InboxNotification {
   read: boolean;
   created_at: string;
 }
+
+export interface HacktivityEvent {
+  kind: "report_accepted" | "report_resolved" | "program_launched";
+  at: string;
+  program_name: string;
+  program_slug: string;
+  researcher_name: string | null;
+  severity: string | null;
+  cwe_name: string | null;
+}

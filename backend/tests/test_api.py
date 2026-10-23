@@ -850,3 +850,41 @@ async def test_application_answers_populate_profile(admin_client, client, make_c
     reset_rate_limiters()
     await anon.post("/api/public/applications", json={"email": "prof2@test.com", "answers": {field["id"]: "evil"}})
     assert (await researcher.get("/api/me/profile")).json()["answers"][0]["value"] == "h4x"
+
+
+async def test_hacktivity_feed(admin_client, client, make_client):
+    program_id = client.ids["program_id"]
+    anon = await make_client()
+    assert (await anon.get("/api/hacktivity")).status_code == 401
+
+    async def researcher(email, name):
+        invite = (await admin_client.post(f"/api/programs/{program_id}/invites", json={"email": email})).json()
+        c = await make_client()
+        await c.post("/api/auth/researchers/register", json={"token": invite["token"], "password": "res12345", "name": name})
+        return c
+
+    shown = await researcher("shown@test.com", "Shown Person")
+    hidden = await researcher("hidden@test.com", "Hidden Person")
+    await hidden.patch("/api/me", json={"leaderboard_opt_in": False})
+    secret = (await shown.post("/api/reports", json={"program_id": program_id, "title": "SECRET TITLE", "severity": "high", "cwe_id": "CWE-79"})).json()
+    other = (await hidden.post("/api/reports", json={"program_id": program_id, "title": "other", "severity": "low"})).json()
+    pending = (await shown.post("/api/reports", json={"program_id": program_id, "title": "not yet"})).json()
+    await admin_client.patch(f"/api/reports/{secret['id']}/triage", json={"status": "resolved"})
+    await admin_client.patch(f"/api/reports/{other['id']}/triage", json={"status": "accepted"})
+
+    feed = (await hidden.get("/api/hacktivity")).json()  # any logged-in user, researcher here
+    assert "SECRET TITLE" not in str(feed) and pending["id"] not in str(feed)
+    reports = [e for e in feed if e["kind"] != "program_launched"]
+    assert {(e["kind"], e["researcher_name"], e["severity"]) for e in reports} == {
+        ("report_resolved", "Shown Person", "high"),
+        ("report_accepted", "Anonymous researcher", "low"),
+    }
+    assert any(e["kind"] == "program_launched" and e["program_slug"] == "test-program" for e in feed)
+    assert (await admin_client.get("/api/hacktivity")).status_code == 200  # staff too
+
+    # private programs never show up
+    await admin_client.patch(f"/api/programs/{program_id}", json={"visibility": "private"})
+    assert (await hidden.get("/api/hacktivity")).json() == []
+    # cursor: nothing older than the beginning of time
+    await admin_client.patch(f"/api/programs/{program_id}", json={"visibility": "public"})
+    assert (await hidden.get("/api/hacktivity", params={"before": "2000-01-01T00:00:00Z"})).json() == []

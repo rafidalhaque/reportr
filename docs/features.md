@@ -226,7 +226,7 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
   backend and everything else to the frontend.
 - ✅ **Idempotent seed** — default org, super admin, demo program with example scope,
   platform settings, email templates.
-- ✅ **Test suite** — 43 tests on in-memory SQLite: end-to-end API flows (invites, reports,
+- ✅ **Test suite** — 44 tests on in-memory SQLite: end-to-end API flows (invites, reports,
   triage, RBAC, public forms, applications), email-stack tests with captured delivery, the
   CWE catalog sync check, and a static AST guard against Python 3.12/3.14 annotation-order
   drift.
@@ -245,6 +245,14 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
 - ✅ **Opt-in/out** — `leaderboard_opt_in` toggle on the profile page (default on).
 - ✅ **Public hall of fame** (`/hall-of-fame/{slug}`, `GET /api/public/programs/{slug}/hall-of-fame`)
   — per public program; private and draft programs return 404.
+
+## Hacktivity
+
+- ✅ **Platform-wide activity feed** (`/hacktivity`, `GET /api/hacktivity`) — for every logged-in
+  user: reports accepted/resolved and newly launched programs across public and internal programs,
+  newest first with "load more" (`before` cursor). Never shows titles or details; researchers appear
+  by name only if opted in to rankings, otherwise as "Anonymous researcher". Private, draft and
+  suspended programs never appear.
 
 ## Theme & UI
 

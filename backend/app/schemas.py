@@ -512,3 +512,14 @@ class ApplicationFieldRead(BaseModel):
     options: list[str]
     help_text: str
     position: int
+
+
+# --- Hacktivity (platform-wide activity feed) ---------------------------------
+class HacktivityEvent(BaseModel):
+    kind: Literal["report_accepted", "report_resolved", "program_launched"]
+    at: datetime
+    program_name: str
+    program_slug: str
+    researcher_name: str | None = None  # opted-in researchers only, else "Anonymous researcher"
+    severity: str | None = None
+    cwe_name: str | None = None

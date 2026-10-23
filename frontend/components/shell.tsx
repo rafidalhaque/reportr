@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Activity,
   Bell,
   Contact,
   LayoutDashboard,
@@ -77,12 +78,14 @@ function navFor(me: Me): NavItem[] {
     return [
       { href: "/researcher", label: "My workspace", icon: LayoutDashboard },
       { href: "/researcher/notifications", label: "Notifications", icon: Bell },
-      { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
+      { href: "/hacktivity", label: "Hacktivity", icon: Activity },
+    { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
       { href: "/profile", label: "My profile", icon: UserCircle },
     ];
   }
   const items: NavItem[] = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/hacktivity", label: "Hacktivity", icon: Activity },
     { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
     { href: "/profile", label: "My profile", icon: UserCircle },
   ];
