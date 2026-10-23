@@ -32,6 +32,14 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
 - ✅ **First super admin via seed** — `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`, idempotent
   across restarts.
 
+- ✅ **Invite existing researchers** — the program Invites tab searches accounts already on
+  the platform (`GET /api/programs/{id}/researchers/search`, excludes members and banned) and
+  invites with one click. Already-members get a 409.
+- ✅ **Researcher inbox** — inviting (or approving an application for) an existing account
+  drops an in-app notification (plus an email when platform SMTP is on). Researchers see an
+  unread badge, and accept/decline from `/researcher/notifications`
+  (`GET /api/me/notifications`, `POST /api/me/invites/{id}/accept|decline`). Decline revokes.
+
 ## Roles & permissions (RBAC)
 
 - ✅ **Global roles** — `super_admin` (everything), `org_admin` (programs, staff
@@ -152,7 +160,7 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
 
 ## Developer experience & infrastructure
 
-- ✅ **FastAPI + SQLAlchemy 2.0 (async) + Alembic** — 7 ordered, up/down-verified
+- ✅ **FastAPI + SQLAlchemy 2.0 (async) + Alembic** — 8 ordered, up/down-verified
   migrations; Postgres in production, in-memory SQLite for the test suite.
 - ✅ **uv dependency management** — `pyproject.toml` + committed `uv.lock`;
   `uv sync` / `uv run`; Docker installs from the lockfile (`--frozen --no-dev`).
@@ -163,7 +171,7 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
   backend and everything else to the frontend.
 - ✅ **Idempotent seed** — default org, super admin, demo program with example scope,
   platform settings, email templates.
-- ✅ **Test suite** — 33 tests on in-memory SQLite: end-to-end API flows (invites, reports,
+- ✅ **Test suite** — 36 tests on in-memory SQLite: end-to-end API flows (invites, reports,
   triage, RBAC, public forms, applications), email-stack tests with captured delivery, the
   CWE catalog sync check, and a static AST guard against Python 3.12/3.14 annotation-order
   drift.
@@ -198,6 +206,5 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
 ## Not shipped yet (see `todo.md`)
 
 Track submission by reference code (#1) · payouts & balances (#9) · per-program API keys ·
-researcher-facing invite/status emails (needs per-recipient SMTP wiring beyond the triage
-inbox) · audit log, SLA tracking, CSV/JSON export, duplicate-
+researcher-facing status emails (invites already notify existing accounts) · audit log, SLA tracking, CSV/JSON export, duplicate-
 detection helper, custom domains, per-program branding (all deferred in the spec).

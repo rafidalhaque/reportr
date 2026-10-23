@@ -647,3 +647,43 @@ async def test_internal_visibility(admin_client, plain_client, client, make_clie
     anon = await make_client()
     assert pid not in [p["id"] for p in (await anon.get("/api/public/programs")).json()]
     assert (await anon.get(f"/api/programs/{pid}")).status_code == 401
+
+
+async def test_invite_existing_researcher_with_inbox(admin_client, client, make_client):
+    program_id = client.ids["program_id"]
+    other = (await admin_client.post("/api/programs", json={"name": "Second", "status": "active"})).json()["id"]
+
+    invite = (await admin_client.post(f"/api/programs/{program_id}/invites", json={"email": "exist@test.com"})).json()
+    researcher = await make_client()
+    await researcher.post("/api/auth/researchers/register", json={"token": invite["token"], "password": "res12345", "name": "Existing"})
+    assert (await researcher.get("/api/me/notifications")).json() == []
+
+    # staff can search accounts that are not yet members of the other program
+    found = (await admin_client.get(f"/api/programs/{other}/researchers/search", params={"q": "exist"})).json()
+    assert [r["email"] for r in found] == ["exist@test.com"]
+    assert (await admin_client.get(f"/api/programs/{program_id}/researchers/search", params={"q": "exist"})).json() == []
+
+    # inviting them creates an inbox notification instead of needing a link
+    inv = (await admin_client.post(f"/api/programs/{other}/invites", json={"email": "exist@test.com"})).json()
+    assert (await researcher.get("/api/me/notifications/unread-count")).json() == {"unread": 1}
+    note = (await researcher.get("/api/me/notifications")).json()[0]
+    assert note["kind"] == "invite" and note["invite_pending"] is True and note["invite_id"] == inv["id"]
+    assert other not in [p["id"] for p in (await researcher.get("/api/programs")).json()]
+
+    # accept -> membership, notification read, no longer pending
+    assert (await researcher.post(f"/api/me/invites/{inv['id']}/accept")).status_code == 204
+    assert other in [p["id"] for p in (await researcher.get("/api/programs")).json()]
+    assert (await researcher.get("/api/me/notifications/unread-count")).json() == {"unread": 0}
+    assert (await researcher.get("/api/me/notifications")).json()[0]["invite_pending"] is False
+    again = await admin_client.post(f"/api/programs/{other}/invites", json={"email": "exist@test.com"})
+    assert again.status_code == 409  # already a member
+
+    # decline revokes; someone else's invite is a 404
+    third = (await admin_client.post("/api/programs", json={"name": "Third", "status": "active"})).json()["id"]
+    inv2 = (await admin_client.post(f"/api/programs/{third}/invites", json={"email": "exist@test.com"})).json()
+    stranger_invite = (await admin_client.post(f"/api/programs/{third}/invites", json={"email": "nobody@test.com"})).json()
+    assert (await researcher.post(f"/api/me/invites/{stranger_invite['id']}/accept")).status_code == 404
+    assert (await researcher.post(f"/api/me/invites/{inv2['id']}/decline")).status_code == 204
+    assert third not in [p["id"] for p in (await researcher.get("/api/programs")).json()]
+    assert (await researcher.post(f"/api/me/invites/{inv2['id']}/accept")).status_code == 400
+    assert (await admin_client.get("/api/me/notifications")).status_code == 403  # staff have no inbox

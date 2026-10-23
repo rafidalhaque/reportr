@@ -45,6 +45,7 @@ All tables carry `org_id` (nullable/defaulted to a single org row for MVP) — c
 | `staff_users` | org_id, email, name, global_role |
 | `researchers` | email, name, portfolio links, global status (applicant/active/banned) |
 | `applications` | researcher email, optional program_id, message/portfolio, status (pending/approved/rejected) |
+| `notifications` | researcher_id, kind, title, body, invite_id, read_at — in-app inbox |
 | `invites` | program_id, email, token (random, single-use), expires_at, accepted_at |
 | `program_memberships` | researcher_id, program_id — grants access to a program's scope + submission form |
 | `program_roles` | staff_id, program_id, role (owner/triager/viewer) |

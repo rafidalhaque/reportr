@@ -250,3 +250,14 @@ export interface HallOfFame {
   program_slug: string;
   entries: LeaderboardEntry[];
 }
+
+export interface InboxNotification {
+  id: string;
+  kind: string;
+  title: string;
+  body: string;
+  invite_id: string | null;
+  invite_pending: boolean;
+  read: boolean;
+  created_at: string;
+}

@@ -41,6 +41,7 @@ from app.schemas import (
     ProgramUpdate,
     ResearcherRead,
 )
+from app.services.inbox import notify_invited_researcher
 from app.services.notifications import send_notification
 
 router = APIRouter(prefix="/programs", tags=["programs"])
@@ -186,6 +187,13 @@ async def create_invite(
 ):
     settings = get_settings()
     email = payload.email.lower()
+    already_member = await session.scalar(
+        select(ProgramMembership.id)
+        .join(Researcher, Researcher.id == ProgramMembership.researcher_id)
+        .where(ProgramMembership.program_id == program_id, Researcher.email == email)
+    )
+    if already_member is not None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "This researcher is already a member of the program")
     pending = await session.scalar(
         select(Invite).where(
             Invite.program_id == program_id,
@@ -205,6 +213,7 @@ async def create_invite(
     session.add(invite)
     await session.commit()
     await session.refresh(invite)
+    await notify_invited_researcher(session, invite, program)
     await send_notification(
         session,
         "invite_created",
@@ -260,6 +269,28 @@ async def list_members(
         )
     ).all()
     return list(researchers)
+
+
+@router.get("/{program_id}/researchers/search", response_model=list[ResearcherRead])
+async def search_researchers(
+    program_id: UUID,
+    q: str = "",
+    _user: StaffUser = Depends(require_program_perm(ACTION_MANAGE_INVITES)),
+    session: AsyncSession = Depends(get_session),
+):
+    """Existing researcher accounts (not banned, not yet members) to pick from when inviting."""
+    members = select(ProgramMembership.researcher_id).where(ProgramMembership.program_id == program_id)
+    query = (
+        select(Researcher)
+        .where(Researcher.hashed_password != "", Researcher.status != "banned", Researcher.id.not_in(members))
+        .order_by(Researcher.email)
+        .limit(20)
+    )
+    term = q.strip()
+    if term:
+        like = f"%{term.lower()}%"
+        query = query.where(func.lower(Researcher.email).like(like) | func.lower(Researcher.name).like(like))
+    return list((await session.scalars(query)).all())
 
 
 @router.delete("/{program_id}/members/{researcher_id}", status_code=status.HTTP_204_NO_CONTENT)

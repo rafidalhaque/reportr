@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Bell,
   LayoutDashboard,
   Loader2,
   Trophy,
@@ -14,7 +15,7 @@ import {
   UserCircle,
   Users,
 } from "lucide-react";
-import { logout } from "@/lib/api";
+import { apiGet, logout } from "@/lib/api";
 import { titleCase } from "@/lib/utils";
 import type { Me } from "@/lib/types";
 import { resetMe } from "@/components/auth";
@@ -74,6 +75,7 @@ function navFor(me: Me): NavItem[] {
   if (me.kind === "researcher") {
     return [
       { href: "/researcher", label: "My workspace", icon: LayoutDashboard },
+      { href: "/researcher/notifications", label: "Notifications", icon: Bell },
       { href: "/researcher/leaderboard", label: "Leaderboard", icon: Trophy },
       { href: "/profile", label: "My profile", icon: UserCircle },
     ];
@@ -102,6 +104,14 @@ export function AppShell({ me, children }: { me: Me; children: React.ReactNode }
   const [menuOpen, setMenuOpen] = useState(false);
   const isStaff = me.kind === "staff";
   const nav = navFor(me);
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    if (isStaff) return;
+    apiGet<{ unread: number }>("/me/notifications/unread-count")
+      .then((r) => setUnread(r.unread))
+      .catch(() => setUnread(0));
+  }, [isStaff, pathname]);
 
   async function handleSignOut() {
     try {
@@ -132,6 +142,9 @@ export function AppShell({ me, children }: { me: Me; children: React.ReactNode }
           <Link key={item.href} href={item.href} className={navClass(item.href)} onClick={() => setMenuOpen(false)}>
             <item.icon className="h-4 w-4" />
             {item.label}
+            {item.href === "/researcher/notifications" && unread > 0 && (
+              <span className="ml-auto rounded-full bg-indigo-600 px-1.5 text-xs font-semibold text-white">{unread}</span>
+            )}
           </Link>
         ))}
       </nav>

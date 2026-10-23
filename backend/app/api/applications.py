@@ -12,6 +12,7 @@ from app.core.permissions import has_global_role, has_program_perm
 from app.database import get_session
 from app.models import Application, Invite, Program, ProgramRole, StaffUser
 from app.schemas import ApplicationDecision, ApplicationRead, InviteRead
+from app.services.inbox import notify_invited_researcher
 from app.services.notifications import send_notification
 
 router = APIRouter(prefix="/applications", tags=["applications"])
@@ -85,6 +86,7 @@ async def approve_application(
     session.add(invite)
     await session.commit()
     await session.refresh(invite)
+    await notify_invited_researcher(session, invite, program)
     await send_notification(
         session,
         "application_approved",

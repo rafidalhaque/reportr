@@ -409,3 +409,19 @@ class HallOfFame(BaseModel):
     program_name: str
     program_slug: str
     entries: list[LeaderboardEntry]
+
+
+# --- Researcher inbox ---------------------------------------------------------
+class NotificationRead(BaseModel):
+    id: UUID
+    kind: str
+    title: str
+    body: str
+    invite_id: UUID | None
+    invite_pending: bool  # invitation can still be accepted/declined
+    read: bool
+    created_at: datetime
+
+
+class UnreadCount(BaseModel):
+    unread: int

@@ -1077,6 +1077,78 @@ function ApiDocsTab({ program }: { program: ProgramDetail }) {
 
 /* ------------------------------ Invites tab ------------------------------ */
 
+/** Search researchers already on the platform and invite them in one click (they get an inbox notification). */
+function ExistingResearcherPicker({
+  programId,
+  refreshKey,
+  onInvite,
+}: {
+  programId: string;
+  refreshKey: number;
+  onInvite: (researcher: Researcher) => Promise<void>;
+}) {
+  const [q, setQ] = useState("");
+  const [results, setResults] = useState<Researcher[]>([]);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      apiGet<Researcher[]>(`/programs/${programId}/researchers/search`, { q })
+        .then(setResults)
+        .catch(() => setResults([]));
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [programId, q, refreshKey]);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Invite an existing researcher</CardTitle>
+        <CardDescription>
+          Pick someone who already has an account. They get a notification in their inbox and
+          can accept or decline.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search by name or email"
+          aria-label="Search researchers"
+          className="max-w-md"
+        />
+        {results.length === 0 ? (
+          <p className="text-sm text-slate-500 dark:text-slate-400">No matching researchers outside this program.</p>
+        ) : (
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+            {results.map((r) => (
+              <li key={r.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span className="min-w-0 truncate">
+                  <span className="font-medium">{r.name || r.email}</span>
+                  {r.name && <span className="ml-2 text-slate-500 dark:text-slate-400">{r.email}</span>}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busyId === r.id}
+                  onClick={async () => {
+                    setBusyId(r.id);
+                    await onInvite(r);
+                    setBusyId(null);
+                  }}
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                  Invite
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function InvitesTab({ programId }: { programId: string }) {
   const [invites, setInvites] = useState<Invite[] | null>(null);
   const [email, setEmail] = useState("");
@@ -1138,8 +1210,25 @@ function InvitesTab({ programId }: { programId: string }) {
     }
   }
 
+  async function inviteExisting(researcher: Researcher) {
+    setError("");
+    setNotice("");
+    try {
+      await apiPost(`/programs/${programId}/invites`, { email: researcher.email });
+      setNotice(`${researcher.name || researcher.email} was invited and notified in their inbox.`);
+      load();
+    } catch (err) {
+      setError(errMessage(err));
+    }
+  }
+
   return (
     <div className="space-y-6">
+      <ExistingResearcherPicker
+        programId={programId}
+        refreshKey={invites?.length ?? 0}
+        onInvite={inviteExisting}
+      />
       <Card>
         <CardHeader>
           <CardTitle>Create invite</CardTitle>

@@ -265,3 +265,18 @@ class Payout(Base):
     status: Mapped[str] = mapped_column(String(32), default="pending")  # pending/approved/paid
     method: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Notification(Base):
+    """In-app notification for a researcher (e.g. a program invitation)."""
+
+    __tablename__ = "notifications"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    researcher_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("researchers.id"), nullable=False, index=True)
+    kind: Mapped[str] = mapped_column(String(32), default="invite")
+    title: Mapped[str] = mapped_column(String(200))
+    body: Mapped[str] = mapped_column(Text, default="")
+    invite_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("invites.id"), nullable=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
