@@ -77,12 +77,13 @@ function navFor(me: Me): NavItem[] {
     return [
       { href: "/researcher", label: "My workspace", icon: LayoutDashboard },
       { href: "/researcher/notifications", label: "Notifications", icon: Bell },
-      { href: "/researcher/leaderboard", label: "Leaderboard", icon: Trophy },
+      { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
       { href: "/profile", label: "My profile", icon: UserCircle },
     ];
   }
   const items: NavItem[] = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
     { href: "/profile", label: "My profile", icon: UserCircle },
   ];
   if (me.global_role === "super_admin") {

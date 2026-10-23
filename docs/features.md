@@ -214,7 +214,7 @@ Legend: ✅ shipped · 🔜 planned (todo.md item number in parentheses).
 - ✅ **Leaderboard** (`GET /api/leaderboard`, optional `program_id`) — ranks opted-in,
   non-banned researchers by points from accepted/resolved reports (info 1, low 2, medium 4,
   high 8, critical 16; ties share a rank). Program rankings are limited to members and
-  staff with view access. UI: researcher sidebar → Leaderboard.
+  staff with view access. UI: `/leaderboard`, in the sidebar for every logged-in user (stat tiles for researchers).
 - ✅ **Researcher stats** (`GET /api/me/stats`) — submitted, accepted, points, average
   severity, global rank.
 - ✅ **Opt-in/out** — `leaderboard_opt_in` toggle on the profile page (default on).

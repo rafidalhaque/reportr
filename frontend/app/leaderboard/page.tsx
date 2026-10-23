@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { apiGet, errMessage } from "@/lib/api";
 import type { LeaderboardEntry, ResearcherStats } from "@/lib/types";
 import { useMe } from "@/components/auth";
@@ -20,15 +21,22 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-export default function ResearcherLeaderboardPage() {
-  const { me, loading } = useMe("researcher");
+export default function LeaderboardPage() {
+  const router = useRouter();
+  const { me, loading } = useMe(); // any logged-in account (staff or researcher)
   const [stats, setStats] = useState<ResearcherStats | null>(null);
   const [entries, setEntries] = useState<LeaderboardEntry[] | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!loading && !me) router.replace("/login");
+  }, [loading, me, router]);
+
+  useEffect(() => {
     if (!me) return;
-    apiGet<ResearcherStats>("/me/stats").then(setStats).catch((e) => setError(errMessage(e)));
+    if (me.kind === "researcher") {
+      apiGet<ResearcherStats>("/me/stats").then(setStats).catch((e) => setError(errMessage(e)));
+    }
     apiGet<LeaderboardEntry[]>("/leaderboard").then(setEntries).catch((e) => setError(errMessage(e)));
   }, [me]);
 
